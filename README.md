@@ -2,6 +2,8 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/shuuchuu/compression)
 
+Dans le codespace, presser Ctrl-k puis v avec le fichier README.md ouvert pour le visualiser correctement.
+
 ## Initialisation du paquet Python avec `uv`
 
 Utilisez `uv init --package .` pour créer un squelette de paquet Python.
