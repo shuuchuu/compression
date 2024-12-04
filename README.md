@@ -1,5 +1,7 @@
 # Chaînes de traitements avec dvc et compression de modèles
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/shuuchuu/compression)
+
 ## Initialisation du paquet Python avec `uv`
 
 Utilisez `uv init --package .` pour créer un squelette de paquet Python.
