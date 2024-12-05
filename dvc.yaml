@@ -5,3 +5,15 @@ stages:
       - data.zip
     outs:
       - dataset-landscape-main
+  train:
+    cmd: python -m compression
+    params:
+      - data_dir
+      - learning_rate
+      - image_size
+      - model_path
+    deps:
+      - dataset-landscape-main/seg_train
+      - src/compression
+    outs:
+      - landscape_classifier.keras

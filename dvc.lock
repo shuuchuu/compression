@@ -13,3 +13,29 @@ stages:
       md5: 238c45c55d110097cce457f3b6a8c600.dir
       size: 368859683
       nfiles: 24337
+  train:
+    cmd: python -m compression
+    deps:
+    - path: dataset-landscape-main/seg_train
+      hash: md5
+      md5: 26ead25fdb2268128d40ade86d29e228.dir
+      size: 212876095
+      nfiles: 14034
+    - path: src/compression
+      hash: md5
+      md5: 2c126c1fff653f704d045538ee0b3a19.dir
+      size: 9354
+      nfiles: 10
+    params:
+      params.yaml:
+        data_dir: dataset-landscape-main/seg_train
+        image_size:
+        - 150
+        - 150
+        learning_rate: 0.0001
+        model_path: landscape_classifier.keras
+    outs:
+    - path: landscape_classifier.keras
+      hash: md5
+      md5: 0e2b2e7cb6c1dbe06785bf60d0d7d875
+      size: 28430583
