@@ -1,5 +1,5 @@
 import pathlib
-import typing
+from typing import BinaryIO, Literal, overload
 
 import numpy
 import tqdm
@@ -11,14 +11,25 @@ LABEL_TO_INDEX = {label: i for i, label in enumerate(LABEL_NAMES)}
 
 
 def process_image(
-    file: typing.BinaryIO | str | pathlib.Path, image_size: tuple[int, int]
+    file: BinaryIO | str | pathlib.Path, image_size: tuple[int, int]
 ) -> numpy.ndarray:
     return numpy.array(Image.open(file).resize(image_size))[None, ...]
 
 
+@overload
 def get_images(
-    dir_path: pathlib.Path, image_size: tuple[int, int]
-) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+    dir_path: pathlib.Path, image_size: tuple[int, int], split: Literal[True]
+) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]: ...
+@overload
+def get_images(
+    dir_path: pathlib.Path, image_size: tuple[int, int], split: Literal[False]
+) -> tuple[numpy.ndarray, numpy.ndarray]: ...
+def get_images(
+    dir_path: pathlib.Path, image_size: tuple[int, int], split: bool = True
+) -> (
+    tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
+    | tuple[numpy.ndarray, numpy.ndarray]
+):
     images = []
     labels = []
 
@@ -38,4 +49,8 @@ def get_images(
     images_array = numpy.vstack(images)
     labels_array = numpy.array(labels)
 
-    return train_test_split(images_array, labels_array, test_size=0.3, shuffle=True)
+    return (
+        train_test_split(images_array, labels_array, test_size=0.3, shuffle=True)
+        if split
+        else (images_array, labels_array)
+    )
