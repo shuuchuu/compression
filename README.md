@@ -62,56 +62,51 @@ Pour préparer les données avant d'entraîner puis de compresser des modèles, 
 
 ```python
 import pathlib
+import typing
 
-import cv2
 import numpy
-import sklearn.metrics
-import sklearn.utils
+import tqdm
+from PIL import Image
+from sklearn.model_selection import train_test_split
 
-CLASS_NAMES = ["buildings", "forest", "glacier", "mountain", "sea", "street"]
-CLASS_INDICES = {l: i for i, l in enumerate(CLASS_NAMES)}
+LABEL_NAMES = ["buildings", "forest", "glacier", "mountain", "sea", "street"]
+LABEL_TO_INDEX = {label: i for i, label in enumerate(LABEL_NAMES)}
+
+
+def process_image(
+    file: typing.BinaryIO | str | pathlib.Path, image_size: tuple[int, int]
+) -> numpy.ndarray:
+    return numpy.array(Image.open(file).resize(image_size))[None, ...]
 
 
 def get_images(
-    dir_path: pathlib.Path, image_size: tuple[int, int], shuffle: bool = True
-) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+    dir_path: pathlib.Path, image_size: tuple[int, int]
+) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
     images = []
     labels = []
-    file_paths = []
 
-    # On itère sur les sous-dossier de la racine : ils correspondent chacun à une
-    # classe
-    for subdir_path in dir_path.iterdir():
+    for subdir_path in tqdm.tqdm(
+        list(dir_path.iterdir()), desc="Traitement des dossiers"
+    ):
+        dir_name = subdir_path.name
 
-        # Attribuez le bon label en fonction du nom du dossier "labels"
-        # Votre code ici
-        label = CLASS_INDICES.get(subdir_path.name)
+        label = LABEL_TO_INDEX.get(dir_name)
 
-        # On ajoute chaque image du label (dossier) courant à notre dataset
-        for image_path in subdir_path.iterdir():
-            # Utilisation de OpenCV pour charger l'image
-            image = cv2.imread(str(image_path))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image = cv2.resize(image, image_size)
-            image = image.astype("float32")
-            images.append(image)
+        for image_path in tqdm.tqdm(
+            list(subdir_path.iterdir()), desc=f"Dossier {dir_name}", leave=False
+        ):
+            images.append(process_image(image_path, image_size))
             labels.append(label)
-            file_paths.append(image_path)
-    images_array = numpy.array(images)
-    labels_array = numpy.array(labels)
-    file_paths_array = numpy.array(file_paths)
 
-    # Mélange de ces tableaux
-    if shuffle:
-        images_array, labels_array, file_paths_array = sklearn.utils.shuffle(
-            images_array, labels_array, file_paths_array
-        )
-    return images_array, labels_array, file_paths_array
+    images_array = numpy.vstack(images)
+    labels_array = numpy.array(labels)
+
+    return train_test_split(images_array, labels_array, test_size=0.3, shuffle=True)
 ```
 
 ## Entraînement d'un modèle simple
 
-Nous allons maintenant entraîner un modèle de classification d'images&nbsp;: le modèle historique LeNet. En voici une implémentation. Adaptez-la pour enregistrer le modèle appris avec `dvclive` et intégrez-la au dossier de sources Python.
+Nous allons maintenant entraîner un modèle de classification d'images&nbsp;: le modèle historique LeNet. En voici une implémentation. Adaptez-la pour enregistrer le modèle appris avec `dvc` et intégrez-la au dossier de sources Python.
 
 ### Modèle
 
@@ -162,19 +157,17 @@ def get_lenet(
 ```python
 from pathlib import Path
 
-from ... import get_images  # À modifier en fonction des noms des fichiers créés
-from ... import get_lenet  # À modifier en fonction des noms des fichiers créés
+from .data import get_images  # À adapter en fonction du nom de vos fichiers
+from .model import get_lenet  # À adapter en fonction du nom de vos fichiers
 
 
 def train(
-    data_dir: str,
-    image_size: tuple[int, int],
-    learning_rate: float,
+    data_dir: str, image_size: tuple[int, int], learning_rate: float, model_path: str
 ) -> None:
-    images, labels, paths = get_images(Path(data_dir), image_size)
+    X_train, X_val, y_train, y_val = get_images(Path(data_dir), image_size)
     model = get_lenet(image_size, learning_rate)
-    model.fit(images, labels, 128, epochs=3)
-    model.save("landscape_classifier.keras")
+    model.fit(X_train, y_train, 128, validation_data=(X_val, y_val), epochs=3)
+    model.save(model_path)
 ```
 
 ### Définition d'une étape de traitement
