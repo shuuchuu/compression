@@ -3,13 +3,39 @@ authors = [
   {name = "m09", email = "142691+m09@users.noreply.github.com"},
 ]
 dependencies = [
-    "dvc>=3.58.0",
+  "dvc >= 3, < 4",
+  "numpy >= 2, < 3",
+  "opencv-python >= 4, < 5",
+  "scikit-learn >= 1, < 2",
+  "tensorflow >= 2, < 3",
 ]
 description = "Train and compress a LeNet."
 name = "compression"
 readme = "README.md"
 requires-python = ">=3.12"
 version = "0.1.0"
+
+[dependency-groups]
+dev = [
+  "mypy >= 1, < 2",
+  "ruff >= 0.8, < 1",
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+ignore = ["D1", "D203", "D213"]
+preview = true
+select = ["A", "B", "C", "DOC", "E", "EM", "F", "N", "PIE", "PTH", "RET", "RUF", "SIM", "SLF", "UP", "W"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+disallow_untyped_defs = true
+ignore_missing_imports = true
+strict_optional = true
 
 [project.scripts]
 compression = "compression:main"
