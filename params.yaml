@@ -1,4 +1,6 @@
-data_dir: "dataset-landscape-main/seg_train"
-image_size: [150, 150]
+train_data: dataset-landscape-main/seg_train
+test_data: dataset-landscape-main/seg_test
+image_size: [100, 100]
 learning_rate: 0.0001
 model_path: landscape_classifier.keras
+tflite_model_path: landscape_classifier.tflite

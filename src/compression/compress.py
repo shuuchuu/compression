@@ -4,9 +4,8 @@ from typing import Any
 
 import numpy
 import tensorflow as tf
-from dvclive import Live  # type: ignore
 
-from .data import get_images
+from .core.data import get_images
 
 
 def _evaluate_tflite_model(
@@ -46,14 +45,16 @@ def compress(
     train_data: str,
     test_data: str,
     model_path: str,
-    tf_lite_model_path: str,
+    tflite_model_path: str,
     image_size: tuple[int, int],
 ) -> None:
     model = tf.keras.models.load_model(model_path)
 
     def representative_dataset_gen() -> Iterator[list[numpy.ndarray]]:
         images, _labels = get_images(Path(train_data), image_size, split=False)
-        images = images[numpy.random.choice(images.shape[0], size=1_000, replace=False)]
+        images = images[
+            numpy.random.choice(images.shape[0], size=1_000, replace=False)
+        ].astype("float32")
         for i in range(images.shape[0]):
             # Get sample input data as a numpy array in a method of your choosing.
             yield [images[[i]]]
@@ -62,9 +63,10 @@ def compress(
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     converter.representative_dataset = representative_dataset_gen
     tflite_quant_model = converter.convert()
-    Path(tf_lite_model_path).write_bytes(tflite_quant_model)
+    Path(tflite_model_path).write_bytes(tflite_quant_model)
     test_images, test_labels = get_images(Path(test_data), image_size, split=False)
-    test_acc = _evaluate_tflite_model(tflite_quant_model, test_images, test_labels)
-    with Live("dvclive/compress") as live:
-        live.log_artifact(tf_lite_model_path, "model", "landscape_classifier_lite")
-        live.log_metric("test_acc", test_acc)
+    print(
+        _evaluate_tflite_model(
+            tflite_quant_model, test_images.astype("float32"), test_labels
+        )
+    )

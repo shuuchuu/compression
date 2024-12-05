@@ -18,7 +18,7 @@ def process_image(
 
 @overload
 def get_images(
-    dir_path: pathlib.Path, image_size: tuple[int, int], split: Literal[True]
+    dir_path: pathlib.Path, image_size: tuple[int, int], split: Literal[True] = True
 ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]: ...
 @overload
 def get_images(

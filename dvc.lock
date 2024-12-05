@@ -14,28 +14,68 @@ stages:
       size: 368859683
       nfiles: 24337
   train:
-    cmd: python -m compression
+    cmd: python -m compression train
     deps:
     - path: dataset-landscape-main/seg_train
       hash: md5
       md5: 26ead25fdb2268128d40ade86d29e228.dir
       size: 212876095
       nfiles: 14034
-    - path: src/compression
+    - path: src/compression/core
       hash: md5
-      md5: 2c126c1fff653f704d045538ee0b3a19.dir
-      size: 9354
-      nfiles: 10
+      md5: 8abc9c8e0a1908923ae8374975494df0.dir
+      size: 8837
+      nfiles: 5
+    - path: src/compression/train.py
+      hash: md5
+      md5: 0c14bdd8e0fe111a0ca16294fbe396d2
+      size: 439
     params:
       params.yaml:
-        data_dir: dataset-landscape-main/seg_train
         image_size:
-        - 150
-        - 150
+        - 100
+        - 100
         learning_rate: 0.0001
         model_path: landscape_classifier.keras
+        train_data: dataset-landscape-main/seg_train
     outs:
     - path: landscape_classifier.keras
       hash: md5
-      md5: 0e2b2e7cb6c1dbe06785bf60d0d7d875
-      size: 28430583
+      md5: bb295d492c8bc3a0a6e53baa7abbe8ba
+      size: 12394742
+  compress:
+    cmd: python -m compression compress
+    deps:
+    - path: dataset-landscape-main/seg_test
+      hash: md5
+      md5: 33cfdaa1708c48814a4a1206bde93c92.dir
+      size: 45382818
+      nfiles: 3000
+    - path: dataset-landscape-main/seg_train
+      hash: md5
+      md5: 26ead25fdb2268128d40ade86d29e228.dir
+      size: 212876095
+      nfiles: 14034
+    - path: src/compression/compress.py
+      hash: md5
+      md5: 4e50e9a71ab8865470bbc3c561a4a0e8
+      size: 2641
+    - path: src/compression/core
+      hash: md5
+      md5: 8abc9c8e0a1908923ae8374975494df0.dir
+      size: 8837
+      nfiles: 5
+    params:
+      params.yaml:
+        image_size:
+        - 100
+        - 100
+        model_path: landscape_classifier.keras
+        test_data: dataset-landscape-main/seg_test
+        tflite_model_path: landscape_classifier.tflite
+        train_data: dataset-landscape-main/seg_train
+    outs:
+    - path: landscape_classifier.tflite
+      hash: md5
+      md5: 0134fce49079e1c0feabdade4a88209f
+      size: 1040824

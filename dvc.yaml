@@ -6,14 +6,30 @@ stages:
     outs:
       - dataset-landscape-main
   train:
-    cmd: python -m compression
+    cmd: python -m compression train
     params:
-      - data_dir
+      - train_data
       - learning_rate
       - image_size
       - model_path
     deps:
-      - dataset-landscape-main/seg_train
-      - src/compression
+      - ${train_data}
+      - src/compression/core
+      - src/compression/train.py
     outs:
-      - landscape_classifier.keras
+      - ${model_path}
+  compress:
+    cmd: python -m compression compress
+    params:
+      - train_data
+      - test_data
+      - image_size
+      - model_path
+      - tflite_model_path
+    deps:
+      - ${train_data}
+      - ${test_data}
+      - src/compression/core
+      - src/compression/compress.py
+    outs:
+      - ${tflite_model_path}

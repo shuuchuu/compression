@@ -5,3 +5,4 @@ __pycache__/
 /data.zip
 /dataset-landscape-main
 /landscape_classifier.keras
+/landscape_classifier.tflite
