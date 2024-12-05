@@ -1,0 +1,11 @@
+md5: b5fc7b9f8bcbc6302a30448daa7bf1b8
+frozen: true
+deps:
+- checksum: '"67f8fe1d32fe04a1a44d079d380ed5ef96ac86d9e2dc776e3f976c6579bd1c30"'
+  hash: md5
+  path: https://github.com/m09/dataset-landscape/archive/refs/heads/main.zip
+outs:
+- md5: 4ec3de167a16ff1a4e48227a826e9ffa
+  size: 363491732
+  hash: md5
+  path: data.zip
