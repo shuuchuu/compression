@@ -1,0 +1,7 @@
+stages:
+  decompress:
+    cmd: unzip data.zip
+    deps:
+      - data.zip
+    outs:
+      - dataset-landscape-main
