@@ -6,14 +6,15 @@ Dans le codespace, presser Ctrl-k puis v avec le fichier README.md ouvert pour l
 
 ## Initialisation du paquet Python avec `uv`
 
-Utilisez `uv init --package .` pour créer un squelette de paquet Python.
+Utilisez `uv init --name compression --package .` pour créer un squelette de paquet Python.
 
 Utilisez ensuite [`uv add`](https://docs.astral.sh/uv/concepts/projects/dependencies/#adding-dependencies) pour ajouter la dépendance `dvc` au projet.
 
 <details><summary>Solution</summary>
 
-    uv init --package .
+    uv init --name compression --package .
     uv add dvc
+
 </details>
 
 ## Initialisation du dépôt dvc
@@ -24,13 +25,14 @@ Initialisez le projet DVC avec [`dvc init`](https://dvc.org/doc/command-referenc
 
     dvc init
     git commit -m "Initialisation de DVC"
+
 </details>
 
 ## Ajout des données à dvc
 
 À l'aide de [`dvc import-url`](https://dvc.org/doc/command-reference/import-url), téléchargez le fichier zip suivant qui contient les données que nous allons utiliser&nbsp;:
 
-    https://github.com/m09/dataset-landscape/archive/refs/heads/main.zip
+    https://github.com/shuuchuu/dataset-landscape/archive/refs/heads/main.zip
 
 Précisez le nom du fichier de sortie&nbsp;: `data.zip`.
 
@@ -38,10 +40,11 @@ Enregistrez ensuite les modifications avec `git`
 
 <details><summary>Solution</summary>
 
-    dvc import-url https://github.com/m09/dataset-landscape/archive/refs/heads/main.zip data.zip
+    dvc import-url https://github.com/shuuchuu/dataset-landscape/archive/refs/heads/main.zip data.zip
     git add .gitignore data.zip.dvc
 
     git commit -m "Ajout des données"
+
 </details>
 
 ## Création d'une étape de pipeline pour extraire les fichiers de l'archive zip
@@ -54,6 +57,7 @@ Créez une étape de pipeline DVC, à l'aide de `dvc stage add` ou en éditant v
     dvc repro
     git add dvc.lock dvc.yaml .gitignore
     git commit -m "Ajout de l'étape de décompression"
+
 </details>
 
 ## Préparation des données
@@ -185,6 +189,7 @@ Exemple, qui peut varier en fonction de l'organisation précise du code&nbsp;:
                   tp-compression
 
     dvc repro
+
 </details>
 
 ## Compression de modèle a posteriori
