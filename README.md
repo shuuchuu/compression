@@ -30,33 +30,20 @@ Initialisez le projet DVC avec [`dvc init`](https://dvc.org/doc/command-referenc
 
 ## Ajout des données à dvc
 
-À l'aide de [`dvc import-url`](https://dvc.org/doc/command-reference/import-url), téléchargez le fichier zip suivant qui contient les données que nous allons utiliser&nbsp;:
+À l'aide de [`dvc import`](https://doc.dvc.org/command-reference/import), téléchargez le dossier `landscape` du dépôt suivant&nbsp;:
 
-    https://github.com/shuuchuu/dataset-landscape/archive/refs/heads/main.zip
+    https://github.com/shuuchuu/datasets
 
-Précisez le nom du fichier de sortie&nbsp;: `data.zip`.
+Précisez le nom du dossier de sortie&nbsp;: `data`.
 
 Enregistrez ensuite les modifications avec `git`
 
 <details><summary>Solution</summary>
 
-    dvc import-url https://github.com/shuuchuu/dataset-landscape/archive/refs/heads/main.zip data.zip
-    git add .gitignore data.zip.dvc
+    dvc import https://github.com/shuuchuu/datasets landscape -o data
+    git add .gitignore data.dvc
 
     git commit -m "Ajout des données"
-
-</details>
-
-## Création d'une étape de pipeline pour extraire les fichiers de l'archive zip
-
-Créez une étape de pipeline DVC, à l'aide de `dvc stage add` ou en éditant vous-même le fichier `dvc.yaml`, afin de dézipper le fichier `data.zip` (vous pourrez utiliser pour cela la commande `unzip`)
-
-<details><summary>Solution</summary>
-
-    dvc stage add -n decompress -d data.zip -o dataset-landscape-main unzip data.zip
-    dvc repro
-    git add dvc.lock dvc.yaml .gitignore
-    git commit -m "Ajout de l'étape de décompression"
 
 </details>
 
@@ -115,31 +102,31 @@ Nous allons maintenant entraîner un modèle de classification d'images&nbsp;: l
 ### Modèle
 
 ```python
-import tensorflow as tf
+import keras
 
 
 def get_lenet(
     image_size: tuple[int, int], learning_rate: float = 1e-4
-) -> tf.keras.models.Model:
-    def conv(filters: int, padding: str) -> tf.keras.layers.Conv2D:
-        return tf.keras.layers.Conv2D(
+) -> keras.models.Model:
+    def conv(filters: int, padding: str) -> keras.layers.Conv2D:
+        return keras.layers.Conv2D(
             filters=filters, kernel_size=5, padding=padding, activation="sigmoid"
         )
 
-    def pooling() -> tf.keras.layers.MaxPooling2D:
-        return tf.keras.layers.MaxPooling2D()
+    def pooling() -> keras.layers.MaxPooling2D:
+        return keras.layers.MaxPooling2D()
 
-    def dense(units: int, activation: str = "sigmoid") -> tf.keras.layers.Dense:
-        return tf.keras.layers.Dense(units, activation=activation)
+    def dense(units: int, activation: str = "sigmoid") -> keras.layers.Dense:
+        return keras.layers.Dense(units, activation=activation)
 
-    model = tf.keras.Sequential(
+    model = keras.Sequential(
         [
-            tf.keras.layers.InputLayer(input_shape=(*image_size, 3)),
+            keras.layers.Input((*image_size, 3)),
             conv(6, "same"),
             pooling(),
             conv(16, "valid"),
             pooling(),
-            tf.keras.layers.Flatten(),
+            keras.layers.Flatten(),
             dense(120),
             dense(84),
             dense(6, activation="softmax"),
@@ -148,7 +135,7 @@ def get_lenet(
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
         loss="sparse_categorical_crossentropy",
         metrics=["accuracy"],
     )
@@ -183,10 +170,10 @@ Définissez maintenant une [étape de traitement](https://dvc.org/doc/command-re
 Exemple, qui peut varier en fonction de l'organisation précise du code&nbsp;:
 
     dvc stage add -n train \
-                  -d dataset-landscape-main/seg_train \
-                  -d tp_compression \
+                  -d data/seg_train \
+                  -d src/compression \
                   -o landscape_classifier.keras \
-                  tp-compression
+                  compression
 
     dvc repro
 
@@ -194,8 +181,8 @@ Exemple, qui peut varier en fonction de l'organisation précise du code&nbsp;:
 
 ## Compression de modèle a posteriori
 
-Démonstration d'ajout d'un code de compression qui utilise les recommandations du [guide de quantification TensorFlow](https://www.tensorflow.org/model_optimization/guide/quantization/post_training).
+Démonstration d'ajout d'un code de compression qui utilise un export ONNX.
 
 ## Solution
 
-Dépôt [GitHub](https://dagshub.com/m09/compression) sur la branche `solution`.
+Dépôt [GitHub](https://github.com/shuuchuu/compression) sur la branche `solution`.
