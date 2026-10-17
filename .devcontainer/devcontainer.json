@@ -24,13 +24,12 @@
             "source.organizeImports": "explicit"
           },
           "editor.formatOnSave": true
-        },
-        "mypy.runUsingActiveInterpreter": true
+        }
       },
       "extensions": [
         "be5invis.toml",
         "charliermarsh.ruff",
-        "matangover.mypy",
+        "astral-sh.ty",
         "MS-CEINTL.vscode-language-pack-fr",
         "ms-python.python",
         "ms-vsliveshare.vsliveshare",
