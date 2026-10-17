@@ -1,0 +1,59 @@
+[project]
+authors = [
+  {name = "m09", email = "142691+m09@users.noreply.github.com"},
+]
+dependencies = [
+  "dvc >= 3, < 4",
+  "onnx >= 1.19",
+  "onnxruntime >= 1.23",
+  "onnxscript >= 0.5",
+  "torch >= 2.9",
+  "torchvision >= 0.24",
+]
+description = "Train and compress a LeNet."
+homepage = "https://github.com/shuuchuu/compression"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+name = "model-compression"
+readme = "README.md"
+requires-python = ">= 3.13"
+version = "0.1.0"
+
+[dependency-groups]
+dev = [
+  "ruff >= 0.17",
+  "ty >= 0.0.88",
+]
+
+# CPU wheels of PyTorch: PyPI's embed the CUDA libraries, several GB.
+[[tool.uv.index]]
+explicit = true
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+[tool.uv.sources]
+torch = [{index = "pytorch-cpu"}]
+torchvision = [{index = "pytorch-cpu"}]
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+ignore = [
+  "D1",
+  "incorrect-blank-line-before-class",
+  "multi-line-summary-second-line",
+  "non-empty-init-module",
+]
+preview = true
+select = ["A", "B", "C", "D", "DOC", "E", "EM", "F", "I", "N", "PIE", "PTH", "RET", "RUF", "SIM", "SLF", "TC", "UP", "W"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pep8-naming]
+ignore-names = ["X", "X_*", "Y", "Y_*"]
+
+[build-system]
+build-backend = "uv_build"
+requires = ["uv_build>=0.13.1,<0.14.0"]

@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier
+_commit: 0.1.6
+_src_path: template
+project_authors:
+- '  {name = "m09", email = "142691+m09@users.noreply.github.com"},'
+project_description: Train and compress a LeNet.
+project_homepage: https://github.com/shuuchuu/compression
+project_id: model_compression
+project_layout: package
+project_license: Apache-2.0
+project_name: model-compression
+tools:
+- devcontainer

@@ -1,0 +1,123 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python -m model_compression prepare
+    deps:
+    - path: data/seg_test
+      hash: md5
+      md5: 33cfdaa1708c48814a4a1206bde93c92.dir
+      size: 45382818
+      nfiles: 3000
+    - path: data/seg_train
+      hash: md5
+      md5: 26ead25fdb2268128d40ade86d29e228.dir
+      size: 212876095
+      nfiles: 14034
+    - path: src/model_compression/__main__.py
+      hash: md5
+      md5: 92ba531986a236d2f4bafd73aeafcf10
+      size: 444
+    - path: src/model_compression/data.py
+      hash: md5
+      md5: b0a63decdad184fa186a8098ee96503d
+      size: 1202
+    params:
+      params.yaml:
+        images_per_class: 500
+        prepared_data: prepared
+        test_data: data/seg_test
+        train_data: data/seg_train
+    outs:
+    - path: prepared
+      hash: md5
+      md5: d8b877b1783a8bd01ca6806bbd8241b9.dir
+      size: 31013022
+      nfiles: 5911
+  train:
+    cmd: python -m model_compression train
+    deps:
+    - path: prepared
+      hash: md5
+      md5: d8b877b1783a8bd01ca6806bbd8241b9.dir
+      size: 31013022
+      nfiles: 5911
+    - path: src/model_compression/__main__.py
+      hash: md5
+      md5: 92ba531986a236d2f4bafd73aeafcf10
+      size: 444
+    - path: src/model_compression/data.py
+      hash: md5
+      md5: b0a63decdad184fa186a8098ee96503d
+      size: 1202
+    - path: src/model_compression/model.py
+      hash: md5
+      md5: b1de2a814f8495df72a06c950635166b
+      size: 817
+    - path: src/model_compression/train.py
+      hash: md5
+      md5: 0a79cfe7249ace335fb3df240d83587a
+      size: 1744
+    params:
+      params.yaml:
+        epochs: 5
+        learning_rate: 0.003
+        model_path: landscape_classifier.pt
+        prepared_data: prepared
+    outs:
+    - path: landscape_classifier.pt
+      hash: md5
+      md5: e0e28c553096d53e2899835e141c72fd
+      size: 251221
+    - path: metrics/train.json
+      hash: md5
+      md5: b5c89053163233c21488077a9574417d
+      size: 60
+  compress:
+    cmd: python -m model_compression compress
+    deps:
+    - path: landscape_classifier.pt
+      hash: md5
+      md5: e0e28c553096d53e2899835e141c72fd
+      size: 251221
+    - path: prepared
+      hash: md5
+      md5: d8b877b1783a8bd01ca6806bbd8241b9.dir
+      size: 31013022
+      nfiles: 5911
+    - path: src/model_compression/__main__.py
+      hash: md5
+      md5: 92ba531986a236d2f4bafd73aeafcf10
+      size: 444
+    - path: src/model_compression/compress.py
+      hash: md5
+      md5: 25040dcc0893d0190d10b9b2c8af28d1
+      size: 4052
+    - path: src/model_compression/data.py
+      hash: md5
+      md5: b0a63decdad184fa186a8098ee96503d
+      size: 1202
+    - path: src/model_compression/model.py
+      hash: md5
+      md5: b1de2a814f8495df72a06c950635166b
+      size: 817
+    - path: src/model_compression/train.py
+      hash: md5
+      md5: 0a79cfe7249ace335fb3df240d83587a
+      size: 1744
+    params:
+      params.yaml:
+        learning_rate: 0.003
+        model_path: landscape_classifier.pt
+        onnx_path: landscape_classifier.onnx
+        prepared_data: prepared
+        quant_type: static
+        sparsity: 0.5
+    outs:
+    - path: landscape_classifier.onnx
+      hash: md5
+      md5: 5cd4bd8b184885f0d15f42183c527d9c
+      size: 85348
+    - path: metrics/compress.json
+      hash: md5
+      md5: fdb638c4f5a79ffdaa5523f9cf85ae54
+      size: 290

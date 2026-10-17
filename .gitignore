@@ -1,0 +1,11 @@
+__pycache__/
+.ruff_cache/
+.venv/
+.vscode/
+dist/
+*.egg-info
+
+/landscape_classifier.pt
+/landscape_classifier.onnx
+/data
+/prepared
