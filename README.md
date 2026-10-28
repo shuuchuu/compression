@@ -93,7 +93,7 @@ git commit -m "Création du paquet Python et du dépôt DVC"
 Les commandes suivantes téléchargent dans `data/` le dossier `landscape` du dépôt [shuuchuu/datasets](https://github.com/shuuchuu/datasets/tree/main/landscape), sans `data/seg_pred/`, des images sans étiquette qui ne servent pas ici. `data/seg_train/` et `data/seg_test/` contiennent les images d'entraînement et de test (150&nbsp;×&nbsp;150&nbsp;pixels), un dossier par classe (`buildings`, `forest`, `glacier`, `mountain`, `sea`, `street`).
 
 ```console
-curl -sSL https://github.com/shuuchuu/datasets/raw/refs/heads/main/ghsparse.sh | bash -s landscape
+curl -fsSL https://github.com/shuuchuu/datasets/raw/refs/heads/main/ghsparse.sh -o /tmp/ghsparse.sh && bash /tmp/ghsparse.sh landscape
 mv landscape data
 rm -r data/seg_pred
 ```
