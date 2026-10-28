@@ -1,0 +1,10 @@
+train_data: data/seg_train
+test_data: data/seg_test
+images_per_class: 500
+prepared_data: prepared
+learning_rate: 0.003
+epochs: 5
+model_path: landscape_classifier.pt
+sparsity: 0.5
+quant_type: static
+onnx_path: landscape_classifier.onnx

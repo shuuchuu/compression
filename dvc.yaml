@@ -1,0 +1,55 @@
+stages:
+  prepare:
+    cmd: python -m model_compression prepare
+    params:
+      - train_data
+      - test_data
+      - images_per_class
+      - prepared_data
+    deps:
+      - ${train_data}
+      - ${test_data}
+      - src/model_compression/__main__.py
+      - src/model_compression/data.py
+    outs:
+      - ${prepared_data}
+  train:
+    cmd: python -m model_compression train
+    params:
+      - prepared_data
+      - learning_rate
+      - epochs
+      - model_path
+    deps:
+      - ${prepared_data}
+      - src/model_compression/__main__.py
+      - src/model_compression/data.py
+      - src/model_compression/model.py
+      - src/model_compression/train.py
+    outs:
+      - ${model_path}
+    metrics:
+      - metrics/train.json:
+          cache: false
+  compress:
+    cmd: python -m model_compression compress
+    params:
+      - prepared_data
+      - model_path
+      - learning_rate
+      - sparsity
+      - quant_type
+      - onnx_path
+    deps:
+      - ${prepared_data}
+      - ${model_path}
+      - src/model_compression/__main__.py
+      - src/model_compression/compress.py
+      - src/model_compression/data.py
+      - src/model_compression/model.py
+      - src/model_compression/train.py
+    outs:
+      - ${onnx_path}
+    metrics:
+      - metrics/compress.json:
+          cache: false
