@@ -29,7 +29,7 @@
       "extensions": [
         "be5invis.toml",
         "charliermarsh.ruff",
-        "astral-sh.ty",
+        "meta.pyrefly",
         "MS-CEINTL.vscode-language-pack-fr",
         "ms-python.python",
         "ms-vsliveshare.vsliveshare",
