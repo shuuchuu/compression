@@ -820,7 +820,7 @@ git add .gitignore dvc.lock dvc.yaml metrics params.yaml src
 git commit -m "Ajout de l'étape de compression"
 ```
 
-Sur nos essais, le modèle élagué de moitié puis quantifié en int8 est trois fois plus petit (0,27 → 0,09&nbsp;Mo), à une exactitude d'un point plus basse (0,615 → 0,605)… mais plus lent&nbsp;: 0,7&nbsp;ms par image au lieu de 0,45. Les quantifications et déquantifications qu'ajoute la quantification statique (le format QDQ) coûtent plus que les calculs en int8 ne font gagner sur un CPU sans instructions int8 rapides (VNNI) et sur un modèle aussi petit. Un gain annoncé n'est pas un gain mesuré&nbsp;: mesurez sur le matériel cible.
+Sur nos essais, le modèle élagué de moitié puis quantifié en int8 est trois fois plus petit (0,27 → 0,09&nbsp;Mo), à une exactitude d'un point plus basse (0,615 → 0,605)… mais plus lent&nbsp;: 0,7&nbsp;ms par image au lieu de 0,45. Ce surcoût ne vient pas des conversions du format QDQ&nbsp;: à l'ouverture de la session, ONNX Runtime fond le graphe quantifié en opérateurs int8 (`QLinearConv` pour les convolutions, `QGemm` pour les couches linéaires), avec une seule quantification à l'entrée et une seule déquantification à la sortie. Sur la seule machine où nous l'avons mesuré, il vient des noyaux int8 eux-mêmes, lents sur un CPU sans instructions int8 rapides (VNNI), et des changements de disposition des données qu'ils demandent, que rien ne compense sur un modèle aussi petit. Un gain annoncé n'est pas un gain mesuré&nbsp;: mesurez sur le matériel cible.
 
 </details>
 
