@@ -37,9 +37,6 @@ url = "https://download.pytorch.org/whl/cpu"
 torch = [{index = "pytorch-cpu"}]
 torchvision = [{index = "pytorch-cpu"}]
 
-[tool.uv.build-backend]
-module-name = "compression_modele"
-
 [tool.ruff.lint]
 ignore = [
   "D1",

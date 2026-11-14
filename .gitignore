@@ -5,7 +5,7 @@ __pycache__/
 dist/
 *.egg-info
 
-/classifieur_paysages.pt
-/classifieur_paysages.onnx
-/donnees
-/preparees
+/landscape_classifier.pt
+/landscape_classifier.onnx
+/data
+/prepared
