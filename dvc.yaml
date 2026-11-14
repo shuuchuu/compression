@@ -1,0 +1,55 @@
+stages:
+  prepare:
+    cmd: python -m compression_modele prepare
+    params:
+      - dossier_ent
+      - dossier_test
+      - images_par_classe
+      - dossier_prepare
+    deps:
+      - ${dossier_ent}
+      - ${dossier_test}
+      - src/compression_modele/__main__.py
+      - src/compression_modele/donnees.py
+    outs:
+      - ${dossier_prepare}
+  entraine:
+    cmd: python -m compression_modele entraine
+    params:
+      - dossier_prepare
+      - taux_apprentissage
+      - nb_epoques
+      - chemin_modele
+    deps:
+      - ${dossier_prepare}
+      - src/compression_modele/__main__.py
+      - src/compression_modele/donnees.py
+      - src/compression_modele/modele.py
+      - src/compression_modele/entrainement.py
+    outs:
+      - ${chemin_modele}
+    metrics:
+      - metriques/entrainement.json:
+          cache: false
+  compresse:
+    cmd: python -m compression_modele compresse
+    params:
+      - dossier_prepare
+      - chemin_modele
+      - taux_apprentissage
+      - parcimonie
+      - quantification
+      - chemin_onnx
+    deps:
+      - ${dossier_prepare}
+      - ${chemin_modele}
+      - src/compression_modele/__main__.py
+      - src/compression_modele/compression.py
+      - src/compression_modele/donnees.py
+      - src/compression_modele/modele.py
+      - src/compression_modele/entrainement.py
+    outs:
+      - ${chemin_onnx}
+    metrics:
+      - metriques/compression.json:
+          cache: false

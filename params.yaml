@@ -1,0 +1,10 @@
+dossier_ent: donnees/seg_train
+dossier_test: donnees/seg_test
+images_par_classe: 500
+dossier_prepare: preparees
+taux_apprentissage: 0.003
+nb_epoques: 5
+chemin_modele: classifieur_paysages.pt
+parcimonie: 0.5
+quantification: statique
+chemin_onnx: classifieur_paysages.onnx

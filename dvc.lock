@@ -1,0 +1,123 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python -m compression_modele prepare
+    deps:
+    - path: donnees/seg_test
+      hash: md5
+      md5: 33cfdaa1708c48814a4a1206bde93c92.dir
+      size: 45382818
+      nfiles: 3000
+    - path: donnees/seg_train
+      hash: md5
+      md5: 26ead25fdb2268128d40ade86d29e228.dir
+      size: 212876095
+      nfiles: 14034
+    - path: src/compression_modele/__main__.py
+      hash: md5
+      md5: 7d48cdf344c03e8de5e231ecce1cb9da
+      size: 472
+    - path: src/compression_modele/donnees.py
+      hash: md5
+      md5: b1cc380d1555a863f69e0548055019db
+      size: 1269
+    params:
+      params.yaml:
+        dossier_ent: donnees/seg_train
+        dossier_prepare: preparees
+        dossier_test: donnees/seg_test
+        images_par_classe: 500
+    outs:
+    - path: preparees
+      hash: md5
+      md5: c6f6cb83f88aca758b16e5922057c78d.dir
+      size: 31013022
+      nfiles: 5911
+  entraine:
+    cmd: python -m compression_modele entraine
+    deps:
+    - path: preparees
+      hash: md5
+      md5: c6f6cb83f88aca758b16e5922057c78d.dir
+      size: 31013022
+      nfiles: 5911
+    - path: src/compression_modele/__main__.py
+      hash: md5
+      md5: 7d48cdf344c03e8de5e231ecce1cb9da
+      size: 472
+    - path: src/compression_modele/donnees.py
+      hash: md5
+      md5: b1cc380d1555a863f69e0548055019db
+      size: 1269
+    - path: src/compression_modele/entrainement.py
+      hash: md5
+      md5: 815af3603f5b2265a28d3bb0cde0fa0d
+      size: 1934
+    - path: src/compression_modele/modele.py
+      hash: md5
+      md5: 33bdd686efb0049f4797d78a4a201563
+      size: 793
+    params:
+      params.yaml:
+        chemin_modele: classifieur_paysages.pt
+        dossier_prepare: preparees
+        nb_epoques: 5
+        taux_apprentissage: 0.003
+    outs:
+    - path: classifieur_paysages.pt
+      hash: md5
+      md5: 990dd1a6f0c1faf73a016903d498cc23
+      size: 251285
+    - path: metriques/entrainement.json
+      hash: md5
+      md5: 26980c7218839d81747f28db923a9742
+      size: 63
+  compresse:
+    cmd: python -m compression_modele compresse
+    deps:
+    - path: classifieur_paysages.pt
+      hash: md5
+      md5: 990dd1a6f0c1faf73a016903d498cc23
+      size: 251285
+    - path: preparees
+      hash: md5
+      md5: c6f6cb83f88aca758b16e5922057c78d.dir
+      size: 31013022
+      nfiles: 5911
+    - path: src/compression_modele/__main__.py
+      hash: md5
+      md5: 7d48cdf344c03e8de5e231ecce1cb9da
+      size: 472
+    - path: src/compression_modele/compression.py
+      hash: md5
+      md5: 4324d30cf7eabbb36d1efde65186fb36
+      size: 4334
+    - path: src/compression_modele/donnees.py
+      hash: md5
+      md5: b1cc380d1555a863f69e0548055019db
+      size: 1269
+    - path: src/compression_modele/entrainement.py
+      hash: md5
+      md5: 815af3603f5b2265a28d3bb0cde0fa0d
+      size: 1934
+    - path: src/compression_modele/modele.py
+      hash: md5
+      md5: 33bdd686efb0049f4797d78a4a201563
+      size: 793
+    params:
+      params.yaml:
+        chemin_modele: classifieur_paysages.pt
+        chemin_onnx: classifieur_paysages.onnx
+        dossier_prepare: preparees
+        parcimonie: 0.5
+        quantification: statique
+        taux_apprentissage: 0.003
+    outs:
+    - path: classifieur_paysages.onnx
+      hash: md5
+      md5: 8e05963929a32966de7ddffda64abaea
+      size: 85530
+    - path: metriques/compression.json
+      hash: md5
+      md5: f923624256f9b592b6153670a9c9fa47
+      size: 297

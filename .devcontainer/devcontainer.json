@@ -8,6 +8,8 @@
   // Features to add to the dev container. More info: https://containers.dev/features.
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "uv sync --all-extras",
   // Configure tool-specific properties.
   "customizations": {
     // Configure properties specific to VS Code.
