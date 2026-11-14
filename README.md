@@ -1,20 +1,20 @@
-# Pipelines DVC et compression de modèles
+# DVC Pipelines and Model Compression
 
-*[English version](https://github.com/shuuchuu/compression/tree/main-en)*
+*[Version française](https://github.com/shuuchuu/compression)*
 
-Le projet des travaux pratiques *Pipelines DVC et compression de modèles*. Leur énoncé est ci-dessous, pour les faire dans un Codespace GitHub ou un clone local&nbsp;; c'est le même que celui du notebook des travaux pratiques, en [français](https://colab.research.google.com/github/shuuchuu/labs/blob/main/compression-hands-on-fr.ipynb) ou en [anglais](https://colab.research.google.com/github/shuuchuu/labs/blob/main/compression-hands-on-en.ipynb), qui les fait dans Colab.
+The project of the *DVC pipelines and model compression* lab. Its instructions are below, to run the lab in a GitHub Codespace or a local clone; they are the same as the lab's notebook, in [English](https://colab.research.google.com/github/shuuchuu/labs/blob/main/compression-hands-on-en.ipynb) or in [French](https://colab.research.google.com/github/shuuchuu/labs/blob/main/compression-hands-on-fr.ipynb), which runs it in Colab.
 
-Nous allons construire, avec DVC, la chaîne de traitements d'un classifieur d'images de paysages, en PyTorch&nbsp;: préparation des données, entraînement, puis compression du modèle, chaque étape mesurée et comparée d'une expérience à l'autre.
+We are going to build, with DVC, the pipeline of a landscape image classifier, in PyTorch: data preparation, training, then model compression, each stage measured and compared from one experiment to the next.
 
-## Mise en place de l'environnement de travail
+## Setting up the Working Environment
 
-Ouvrez le dépôt dans un Codespace&nbsp;: sur GitHub, **Code** > **Codespaces** > **Create codespace on main**, ou [ce lien](https://codespaces.new/shuuchuu/compression). Dans un clone local, installez [uv](https://docs.astral.sh/uv/getting-started/installation/).
+This English version of the lab is the repository's `main-en` branch. Open it in a Codespace: on GitHub, on the `main-en` branch, **Code** > **Codespaces** > **Create codespace on main-en**, or [this link](https://codespaces.new/shuuchuu/compression/tree/main-en). In a local clone (`git clone -b main-en https://github.com/shuuchuu/compression.git`), install [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-Les commandes ci-dessous se lancent dans un terminal à la racine du dépôt (**Terminal** > **Nouveau terminal** dans le Codespace). Les fichiers dont le code est donné sont à créer à l'endroit indiqué.
+The commands below run in a terminal at the root of the repository (**Terminal** > **New Terminal** in the Codespace). The files whose code is given are to be created where stated.
 
-## Création du paquet Python et du dépôt DVC
+## Creating the Python package and the DVC repository
 
-Créez un paquet Python `compression_modele` avec `uv init`. Les roues de PyTorch publiées sur PyPI embarquent les bibliothèques CUDA, plusieurs gigaoctets, inutiles ici, où tout tourne sur CPU&nbsp;: avant d'installer quoi que ce soit, ajoutez à la fin de `pyproject.toml` l'index des roues CPU de PyTorch, qui ne sert (`explicit = true`) qu'aux paquets que `[tool.uv.sources]` lui attribue&nbsp;:
+Create a Python package `model_compression` with `uv init`. The PyTorch wheels published on PyPI embed the CUDA libraries, several gigabytes, useless here, where everything runs on a CPU: before installing anything, append to `pyproject.toml` the index of PyTorch's CPU wheels, which only serves (`explicit = true`) the packages `[tool.uv.sources]` assigns to it:
 
 ```toml
 [[tool.uv.index]]
@@ -27,24 +27,24 @@ torch = { index = "pytorch-cpu" }
 torchvision = { index = "pytorch-cpu" }
 ```
 
-Ajoutez ensuite au paquet, avec `uv add`, DVC et les bibliothèques qu'utilise le code fourni plus loin&nbsp;: `torch`, `torchvision`, `onnx`, `onnxscript` (dont l'export ONNX de PyTorch a besoin) et `onnxruntime`. Initialisez enfin DVC dans le dépôt avec `dvc init`, puis enregistrez le tout dans git. DVC se lance avec `uv run`, qui l'exécute dans l'environnement du projet.
+Then add to the package, with `uv add`, DVC and the libraries the code given further down uses: `torch`, `torchvision`, `onnx`, `onnxscript` (which PyTorch's ONNX export needs) and `onnxruntime`. Finally, initialize DVC in the repository with `dvc init`, then save everything in git. DVC runs with `uv run`, which runs it in the project's environment.
 
-**Documentation utile**
+**Useful documentation**
 
 - [`uv init`](https://docs.astral.sh/uv/reference/cli/#uv-init)
 - [`uv add`](https://docs.astral.sh/uv/reference/cli/#uv-add)
 - [`dvc init`](https://doc.dvc.org/command-reference/init)
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-`uv init --package --name compression_modele .` crée le paquet dans le dossier courant, ses sources dans `src/compression_modele/` (pas `compression`&nbsp;: la bibliothèque standard de Python&nbsp;3.14 a un paquet de ce nom, qui masquerait le nôtre). `uv add` prend plusieurs paquets à la fois, et crée l'environnement du projet, `.venv`, que git ignore. `dvc init` crée le dossier `.dvc/` et ajoute lui-même ses fichiers à l'index de git.
+`uv init --package --name model_compression .` creates the package in the current directory, its sources in `src/model_compression/` (not `compression`: Python 3.14's standard library has a package by that name, which would hide ours). `uv add` takes several packages at once, and creates the project's environment, `.venv`, which git ignores. `dvc init` creates the `.dvc/` directory and adds its files to git's index itself.
 
 ```console
-uv init --package --name compression_modele .
+uv init --package --name model_compression .
 ```
 
-À la fin de `pyproject.toml`&nbsp;:
+At the end of `pyproject.toml`:
 
 ```toml
 ...
@@ -63,10 +63,10 @@ git commit -m "..."
 <summary>Solution</summary>
 
 ```console
-uv init --package --name compression_modele .
+uv init --package --name model_compression .
 ```
 
-À la fin de `pyproject.toml`&nbsp;:
+At the end of `pyproject.toml`:
 
 ```toml
 [[tool.uv.index]]
@@ -83,27 +83,27 @@ torchvision = { index = "pytorch-cpu" }
 uv add dvc onnx onnxruntime onnxscript torch torchvision
 uv run dvc init
 git add .
-git commit -m "Création du paquet Python et du dépôt DVC"
+git commit -m "Create the Python package and the DVC repository"
 ```
 
 </details>
 
-## Ajout des données à DVC
+## Adding the data to DVC
 
-Les commandes suivantes téléchargent dans `donnees/` le dossier `landscape` du dépôt [shuuchuu/datasets](https://github.com/shuuchuu/datasets/tree/main/landscape), sans `donnees/seg_pred/`, des images sans étiquette qui ne servent pas ici. `donnees/seg_train/` et `donnees/seg_test/` contiennent les images d'entraînement et de test (150&nbsp;×&nbsp;150&nbsp;pixels), un dossier par classe (`buildings`, `forest`, `glacier`, `mountain`, `sea`, `street`).
+The following commands download into `data/` the `landscape` directory of the [shuuchuu/datasets](https://github.com/shuuchuu/datasets/tree/main/landscape) repository, without `data/seg_pred/`, unlabeled images that aren't used here. `data/seg_train/` and `data/seg_test/` hold the training and test images (150×150 pixels), one directory per class (`buildings`, `forest`, `glacier`, `mountain`, `sea`, `street`).
 
 ```console
 curl -fsSL https://github.com/shuuchuu/datasets/raw/refs/heads/main/ghsparse.sh -o /tmp/ghsparse.sh && bash /tmp/ghsparse.sh landscape
-mv landscape donnees
-rm -r donnees/seg_pred
+mv landscape data
+rm -r data/seg_pred
 ```
 
-Ajoutez `donnees/` à DVC, puis enregistrez dans git les fichiers qui le décrivent.
+Add `data/` to DVC, then save in git the files that describe it.
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-`dvc add` met le dossier dans le cache de DVC, `.dvc/cache`, et écrit `donnees.dvc`, qui retient son empreinte md5&nbsp;; il ajoute aussi `/donnees` à `.gitignore`&nbsp;: ce sont ces deux fichiers qui vont dans git, pas les images.
+`dvc add` puts the directory in DVC's cache, `.dvc/cache`, and writes `data.dvc`, which holds its md5 hash; it also adds `/data` to `.gitignore`: these two files go in git, not the images.
 
 ```console
 uv run dvc add ...
@@ -117,18 +117,18 @@ git commit -m "..."
 <summary>Solution</summary>
 
 ```console
-uv run dvc add donnees
-git add .gitignore donnees.dvc
-git commit -m "Ajout des données"
+uv run dvc add data
+git add .gitignore data.dvc
+git commit -m "Add the data"
 ```
 
 </details>
 
-## Préparation des données
+## Preparing the data
 
-L'entraînement et la compression lisent les mêmes images. Plutôt que de les décoder et de les redimensionner à chaque fois, une première étape de la chaîne, `prepare`, le fait une fois pour toutes&nbsp;: elle copie les `images_par_classe` premières images de chaque classe dans `preparees/entrainement/` et `preparees/test/`, réduites à `TAILLE_IMAGE`, 88&nbsp;×&nbsp;88&nbsp;pixels. 500&nbsp;images par classe suffisent à ces travaux pratiques, et un entraînement sur CPU dure alors une à deux minutes. À cette taille, les dernières cartes de caractéristiques du LeNet de l'entraînement font 20&nbsp;×&nbsp;20, que sa couche `AdaptiveAvgPool2d` réduit à 5&nbsp;×&nbsp;5 par des moyennes sur des fenêtres régulières, ce que l'export ONNX traduit en une seule opération (à 100&nbsp;×&nbsp;100, il en faut une centaine).
+Training and compression read the same images. Rather than decoding and resizing them every time, a first stage of the pipeline, `prepare`, does it once and for all: it copies the first `images_per_class` images of each class into `prepared/train/` and `prepared/test/`, resized to `IMAGE_SIZE`, 88×88 pixels. 500 images per class are enough for this lab, and a training on a CPU then takes one to two minutes. At this size, the last feature maps of the training's LeNet are 20×20, which its `AdaptiveAvgPool2d` layer reduces to 5×5 by averaging regular windows: the ONNX export turns that into a single operation (at 100×100, into about a hundred).
 
-Son code, dans `src/compression_modele/donnees.py`, transforme aussi les images en tenseurs, leurs pixels mis à l'échelle [0,&nbsp;1] (`cree_transformation`), et les charge par lots de 64 (`cree_chargeur`)&nbsp;:
+Its code, in `src/model_compression/data.py`, also turns the images into tensors, their pixels scaled to [0, 1] (`get_transform`), and loads them in batches of 64 (`get_loader`):
 
 ```python
 from pathlib import Path
@@ -139,35 +139,35 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import v2
 
-TAILLE_IMAGE = (88, 88)
+IMAGE_SIZE = (88, 88)
 
 
-def cree_transformation(taille_image: tuple[int, int]) -> v2.Compose:
+def get_transform(image_size: tuple[int, int]) -> v2.Compose:
     return v2.Compose(
-        [v2.ToImage(), v2.Resize(taille_image), v2.ToDtype(torch.float32, scale=True)]
+        [v2.ToImage(), v2.Resize(image_size), v2.ToDtype(torch.float32, scale=True)]
     )
 
 
-def cree_chargeur(
-    dossier: str, taille_image: tuple[int, int], melange: bool = False
+def get_loader(
+    directory: str, image_size: tuple[int, int], shuffle: bool = False
 ) -> DataLoader:
-    jeu = datasets.ImageFolder(dossier, transform=cree_transformation(taille_image))
-    return DataLoader(jeu, batch_size=64, shuffle=melange)
+    dataset = datasets.ImageFolder(directory, transform=get_transform(image_size))
+    return DataLoader(dataset, batch_size=64, shuffle=shuffle)
 
 
 def prepare(
-    dossier_ent: str, dossier_test: str, images_par_classe: int, dossier_prepare: str
+    train_data: str, test_data: str, images_per_class: int, prepared_data: str
 ) -> None:
-    for partie, dossier in (("entrainement", dossier_ent), ("test", dossier_test)):
-        for dossier_classe in sorted(Path(dossier).iterdir()):
-            dossier_sortie = Path(dossier_prepare) / partie / dossier_classe.name
-            dossier_sortie.mkdir(parents=True, exist_ok=True)
-            for chemin in sorted(dossier_classe.iterdir())[:images_par_classe]:
-                image = Image.open(chemin).convert("RGB").resize(TAILLE_IMAGE)
-                image.save(dossier_sortie / chemin.name, quality=95)
+    for split, directory in (("train", train_data), ("test", test_data)):
+        for class_dir in sorted(Path(directory).iterdir()):
+            output_dir = Path(prepared_data) / split / class_dir.name
+            output_dir.mkdir(parents=True, exist_ok=True)
+            for path in sorted(class_dir.iterdir())[:images_per_class]:
+                image = Image.open(path).convert("RGB").resize(IMAGE_SIZE)
+                image.save(output_dir / path.name, quality=95)
 ```
 
-Le point d'entrée de la chaîne, `src/compression_modele/__main__.py`&nbsp;: `python -m compression_modele <étape>` lance la fonction de cette étape, `prepare` de `donnees.py`, puis `entraine` de `entrainement.py` et `compresse` de `compression.py`, que vous écrirez plus loin, avec les paramètres que `dvc.yaml` lui déclare, lus dans `params.yaml` par `dvc.api.params_show`. Le module d'une étape n'est importé que quand elle s'exécute&nbsp;: ce fichier ne changera plus.
+The pipeline's entry point, `src/model_compression/__main__.py`: `python -m model_compression <stage>` runs that stage's function, `prepare` from `data.py`, then `train` from `train.py` and `compress` from `compress.py`, which you'll write further down, with the parameters `dvc.yaml` declares for it, read from `params.yaml` by `dvc.api.params_show`. A stage's module is only imported when it runs: this file won't change anymore.
 
 ```python
 from importlib import import_module
@@ -175,45 +175,45 @@ from sys import argv
 
 from dvc.api import params_show
 
-MODULES = {"prepare": "donnees", "entraine": "entrainement", "compresse": "compression"}
+MODULES = {"prepare": "data", "train": "train", "compress": "compress"}
 
 if len(argv) != 2 or argv[1] not in MODULES:
-    message = f"Usage : python -m compression_modele {{{','.join(MODULES)}}}"
-    raise SystemExit(message)
+    msg = f"Usage: python -m model_compression {{{','.join(MODULES)}}}"
+    raise SystemExit(msg)
 
-etape = argv[1]
-fonction = getattr(import_module(f"compression_modele.{MODULES[etape]}"), etape)
-fonction(**params_show(stages=[etape]))
+stage = argv[1]
+function = getattr(import_module(f"model_compression.{MODULES[stage]}"), stage)
+function(**params_show(stages=[stage]))
 ```
 
-Ajoutez à la chaîne l'étape `prepare`&nbsp;:
+Add the `prepare` stage to the pipeline:
 
-1. Créez `params.yaml`, à la racine du dépôt, avec les paramètres de `prepare`&nbsp;: `dossier_ent` (`donnees/seg_train`), `dossier_test` (`donnees/seg_test`), `images_par_classe` (`500`) et `dossier_prepare` (`preparees`).
-2. Avec `dvc stage add`, créez l'étape `prepare`, qui lance `python -m compression_modele prepare`, en déclarant ses paramètres, ses dépendances (les images et le code qu'elle exécute) et sa sortie.
-3. Exécutez la chaîne avec `dvc repro`, puis enregistrez dans git le code, `params.yaml` et ce que DVC a écrit.
+1. Create `params.yaml`, at the root of the repository, with `prepare`'s parameters: `train_data` (`data/seg_train`), `test_data` (`data/seg_test`), `images_per_class` (`500`) and `prepared_data` (`prepared`).
+2. With `dvc stage add`, create the `prepare` stage, which runs `python -m model_compression prepare`, declaring its parameters, its dependencies (the images and the code it runs) and its output.
+3. Run the pipeline with `dvc repro`, then save in git the code, `params.yaml` and what DVC wrote.
 
-**Documentation utile**
+**Useful documentation**
 
 - [`dvc stage add`](https://doc.dvc.org/command-reference/stage/add)
 - [`dvc repro`](https://doc.dvc.org/command-reference/repro)
 - [`dvc.api.params_show`](https://doc.dvc.org/api-reference/params_show)
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-Les options de `dvc stage add`&nbsp;: `-n` nomme l'étape, `-p` déclare ses paramètres (leurs noms dans `params.yaml`, séparés par des virgules), `-d` chaque dépendance, `-o` sa sortie, puis vient la commande. Le code qu'exécute `prepare`, ce sont `__main__.py` et `donnees.py`. L'étape est écrite dans `dvc.yaml`. `dvc repro` lance les étapes dont une dépendance ou un paramètre a changé, et retient dans `dvc.lock` les empreintes de ce qu'elles ont lu et produit&nbsp;; DVC ajoute aussi `/preparees` à `.gitignore`.
+The options of `dvc stage add`: `-n` names the stage, `-p` declares its parameters (their names in `params.yaml`, separated by commas), `-d` each dependency, `-o` its output, then comes the command. The code `prepare` runs is `__main__.py` and `data.py`. The stage is written to `dvc.yaml`. `dvc repro` runs the stages whose dependencies or parameters changed, and records in `dvc.lock` the hashes of what they read and produced; DVC also adds `/prepared` to `.gitignore`.
 
-`params.yaml`&nbsp;:
+`params.yaml`:
 
 ```yaml
-dossier_ent: donnees/seg_train
-dossier_test: ...
-images_par_classe: ...
-dossier_prepare: ...
+train_data: data/seg_train
+test_data: ...
+images_per_class: ...
+prepared_data: ...
 ```
 
 ```console
-uv run dvc stage add -n prepare -p ... -d ... -o ... python -m compression_modele prepare
+uv run dvc stage add -n prepare -p ... -d ... -o ... python -m model_compression prepare
 uv run dvc repro
 git add ...
 git commit -m "..."
@@ -224,59 +224,59 @@ git commit -m "..."
 <details>
 <summary>Solution</summary>
 
-`params.yaml`&nbsp;:
+`params.yaml`:
 
 ```yaml
-dossier_ent: donnees/seg_train
-dossier_test: donnees/seg_test
-images_par_classe: 500
-dossier_prepare: preparees
+train_data: data/seg_train
+test_data: data/seg_test
+images_per_class: 500
+prepared_data: prepared
 ```
 
 ```console
 uv run dvc stage add -n prepare \
-    -p dossier_ent,dossier_test,images_par_classe,dossier_prepare \
-    -d donnees/seg_train -d donnees/seg_test \
-    -d src/compression_modele/__main__.py -d src/compression_modele/donnees.py \
-    -o preparees \
-    python -m compression_modele prepare
+    -p train_data,test_data,images_per_class,prepared_data \
+    -d data/seg_train -d data/seg_test \
+    -d src/model_compression/__main__.py -d src/model_compression/data.py \
+    -o prepared \
+    python -m model_compression prepare
 ```
 
 ```console
 uv run dvc repro
 git add .gitignore dvc.lock dvc.yaml params.yaml src
-git commit -m "Ajout de l'étape de préparation"
+git commit -m "Add the preparation stage"
 ```
 
 </details>
 
-## Stockage distant
+## Remote storage
 
-Le cache de DVC, `.dvc/cache`, n'existe que sur cette machine. Pour partager données et modèles, ou les retrouver ailleurs, DVC les envoie sur un stockage distant, déclaré une fois pour toutes dans `.dvc/config`. Ici, un simple dossier, `/tmp/stockage-dvc`, joue ce rôle.
+DVC's cache, `.dvc/cache`, only exists on this machine. To share data and models, or to get them back elsewhere, DVC sends them to a remote storage, declared once and for all in `.dvc/config`. Here, a plain directory, `/tmp/dvc-store`, plays that part.
 
-1. Avec `dvc remote add`, déclarez le stockage `local`, dans `/tmp/stockage-dvc`, comme stockage par défaut, puis enregistrez la configuration dans git.
-2. Envoyez-y les données avec `dvc push`, et regardez ce que contient `/tmp/stockage-dvc`.
-3. Supprimez `preparees/`, puis récupérez-le avec `dvc pull`.
+1. With `dvc remote add`, declare the `local` storage, in `/tmp/dvc-store`, as the default storage, then save the configuration in git.
+2. Send the data there with `dvc push`, and look at what `/tmp/dvc-store` holds.
+3. Delete `prepared/`, then get it back with `dvc pull`.
 
-Que faudrait-il faire, sur une autre machine, pour retrouver `preparees/` sans relancer `prepare`&nbsp;?
+What would it take, on another machine, to get `prepared/` back without running `prepare` again?
 
-**Documentation utile**
+**Useful documentation**
 
 - [`dvc remote add`](https://doc.dvc.org/command-reference/remote/add)
 - [`dvc push`](https://doc.dvc.org/command-reference/push)
 - [`dvc pull`](https://doc.dvc.org/command-reference/pull)
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-`-d` fait du stockage celui par défaut, qu'utilisent `dvc push` et `dvc pull` sans option. `dvc remote add` écrit dans `.dvc/config`, que git suit. Le stockage range chaque fichier sous son empreinte md5, comme le cache (`ls /tmp/stockage-dvc/files/md5`).
+`-d` makes the storage the default one, which `dvc push` and `dvc pull` use without an option. `dvc remote add` writes to `.dvc/config`, which git tracks. The storage files each file under its md5 hash, as the cache does (`ls /tmp/dvc-store/files/md5`).
 
 ```console
 uv run dvc remote add -d ... ...
 git add ...
 git commit -m "..."
 uv run dvc push
-rm -r preparees
+rm -r prepared
 uv run dvc pull
 ```
 
@@ -286,23 +286,23 @@ uv run dvc pull
 <summary>Solution</summary>
 
 ```console
-uv run dvc remote add -d local /tmp/stockage-dvc
+uv run dvc remote add -d local /tmp/dvc-store
 git add .dvc/config
-git commit -m "Ajout du stockage distant"
+git commit -m "Add the remote storage"
 uv run dvc push
-ls /tmp/stockage-dvc/files/md5 | head
-rm -r preparees
+ls /tmp/dvc-store/files/md5 | head
+rm -r prepared
 uv run dvc pull
-ls preparees
+ls prepared
 ```
 
-`dvc push` envoie le contenu du cache que décrivent `donnees.dvc` et `dvc.lock`&nbsp;: les images de `donnees/` et celles de `preparees/`, chacune sous son empreinte. Ici, `dvc pull` ne télécharge rien, puisque le cache a encore les fichiers&nbsp;: il les remet à leur place (`dvc checkout`). Sur une autre machine, `git clone` puis `dvc pull` téléchargeraient `preparees/` depuis le stockage, sans rien recalculer, s'il était partagé (un compartiment S3, un serveur SSH…)&nbsp;: un dossier de `/tmp` ne l'est pas.
+`dvc push` sends the content of the cache that `data.dvc` and `dvc.lock` describe: the images of `data/` and those of `prepared/`, each under its hash. Here, `dvc pull` downloads nothing, since the cache still has the files: it puts them back in place (`dvc checkout`). On another machine, `git clone` then `dvc pull` would download `prepared/` from the storage, without computing anything again, if it were shared (an S3 bucket, an SSH server…): a directory of `/tmp` isn't.
 
 </details>
 
-## Entraînement d'un modèle simple
+## Training a simple model
 
-Nous allons maintenant entraîner un modèle de classification d'images&nbsp;: le modèle historique LeNet, deux convolutions puis trois couches denses. Voici son code, à mettre dans `src/compression_modele/modele.py`&nbsp;:
+We are now going to train an image classification model: the historical LeNet model, two convolutions then three dense layers. Here is its code, to put in `src/model_compression/model.py`:
 
 ```python
 import torch
@@ -310,9 +310,9 @@ from torch import nn
 
 
 class LeNet(nn.Module):
-    def __init__(self, nb_classes: int = 6) -> None:
+    def __init__(self, num_classes: int = 6) -> None:
         super().__init__()
-        self.caracteristiques = nn.Sequential(
+        self.features = nn.Sequential(
             nn.Conv2d(3, 6, kernel_size=5, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(2),
@@ -321,20 +321,20 @@ class LeNet(nn.Module):
             nn.MaxPool2d(2),
             nn.AdaptiveAvgPool2d((5, 5)),
         )
-        self.classifieur = nn.Sequential(
+        self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(16 * 5 * 5, 120),
             nn.ReLU(),
             nn.Linear(120, 84),
             nn.ReLU(),
-            nn.Linear(84, nb_classes),
+            nn.Linear(84, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.classifieur(self.caracteristiques(x))
+        return self.classifier(self.features(x))
 ```
 
-Et celui de l'entraînement, dans `src/compression_modele/entrainement.py`&nbsp;: `entraine_epoque` passe une fois sur les images d'entraînement, `evalue` mesure l'exactitude (*accuracy*, la part d'images bien classées), et `entraine` enchaîne `nb_epoques` époques, puis enregistre les poids du modèle dans `chemin_modele` et son exactitude sur les images de test dans `metriques/entrainement.json`, un fichier de métriques que DVC sait lire et comparer&nbsp;:
+And the training's, in `src/model_compression/train.py`: `train_epoch` goes once over the training images, `evaluate` measures the accuracy (the share of images classified right), and `train` runs `epochs` epochs, then saves the model's weights to `model_path` and its accuracy on the test images to `metrics/train.json`, a metrics file DVC can read and compare:
 
 ```python
 import json
@@ -344,79 +344,77 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from .donnees import TAILLE_IMAGE, cree_chargeur
-from .modele import LeNet
+from .data import IMAGE_SIZE, get_loader
+from .model import LeNet
 
-CHEMIN_METRIQUES = Path("metriques/entrainement.json")
+METRICS_PATH = Path("metrics/train.json")
 
 
-def entraine_epoque(
-    modele: nn.Module, chargeur: DataLoader, optimiseur: torch.optim.Optimizer
+def train_epoch(
+    model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer
 ) -> float:
-    critere = nn.CrossEntropyLoss()
-    modele.train()
-    total, nombre = 0.0, 0
-    for images, etiquettes in chargeur:
-        optimiseur.zero_grad()
-        perte = critere(modele(images), etiquettes)
-        perte.backward()
-        optimiseur.step()
-        total += perte.item() * len(etiquettes)
-        nombre += len(etiquettes)
-    return total / nombre
+    loss_fn = nn.CrossEntropyLoss()
+    model.train()
+    total, count = 0.0, 0
+    for images, labels in loader:
+        optimizer.zero_grad()
+        loss = loss_fn(model(images), labels)
+        loss.backward()
+        optimizer.step()
+        total += loss.item() * len(labels)
+        count += len(labels)
+    return total / count
 
 
-def evalue(modele: nn.Module, chargeur: DataLoader) -> float:
-    modele.eval()
-    corrects, nombre = 0, 0
+def evaluate(model: nn.Module, loader: DataLoader) -> float:
+    model.eval()
+    correct, count = 0, 0
     with torch.inference_mode():
-        for images, etiquettes in chargeur:
-            corrects += int((modele(images).argmax(dim=1) == etiquettes).sum())
-            nombre += len(etiquettes)
-    return corrects / nombre
+        for images, labels in loader:
+            correct += int((model(images).argmax(dim=1) == labels).sum())
+            count += len(labels)
+    return correct / count
 
 
-def entraine(
-    dossier_prepare: str, taux_apprentissage: float, nb_epoques: int, chemin_modele: str
+def train(
+    prepared_data: str, learning_rate: float, epochs: int, model_path: str
 ) -> None:
     torch.manual_seed(0)
-    chargeur_ent = cree_chargeur(
-        f"{dossier_prepare}/entrainement", TAILLE_IMAGE, melange=True
-    )
-    chargeur_test = cree_chargeur(f"{dossier_prepare}/test", TAILLE_IMAGE)
-    modele = LeNet()
-    optimiseur = torch.optim.AdamW(modele.parameters(), lr=taux_apprentissage)
-    for epoque in range(nb_epoques):
-        perte = entraine_epoque(modele, chargeur_ent, optimiseur)
-        print(f"époque {epoque + 1}/{nb_epoques} : perte={perte:.3f}")
-    exactitude = evalue(modele, chargeur_test)
-    print(f"exactitude={exactitude:.3f}")
-    torch.save(modele.state_dict(), chemin_modele)
-    CHEMIN_METRIQUES.parent.mkdir(exist_ok=True)
-    CHEMIN_METRIQUES.write_text(json.dumps({"exactitude": exactitude, "perte": perte}))
+    train_loader = get_loader(f"{prepared_data}/train", IMAGE_SIZE, shuffle=True)
+    test_loader = get_loader(f"{prepared_data}/test", IMAGE_SIZE)
+    model = LeNet()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    for epoch in range(epochs):
+        loss = train_epoch(model, train_loader, optimizer)
+        print(f"epoch {epoch + 1}/{epochs}: loss={loss:.3f}")
+    accuracy = evaluate(model, test_loader)
+    print(f"accuracy={accuracy:.3f}")
+    torch.save(model.state_dict(), model_path)
+    METRICS_PATH.parent.mkdir(exist_ok=True)
+    METRICS_PATH.write_text(json.dumps({"accuracy": accuracy, "loss": loss}))
 ```
 
-Ajoutez à la chaîne l'étape `entraine`, qui lance `python -m compression_modele entraine`&nbsp;: ses paramètres `taux_apprentissage` (`0.001`), `nb_epoques` (`5`) et `chemin_modele` (`classifieur_paysages.pt`) s'ajoutent à `params.yaml`, et elle lit aussi `dossier_prepare`. Déclarez `metriques/entrainement.json` comme métrique de l'étape, exécutez la chaîne, affichez les métriques avec `dvc metrics show`, puis enregistrez le tout dans git.
+Add the `train` stage to the pipeline, which runs `python -m model_compression train`: its parameters `learning_rate` (`0.001`), `epochs` (`5`) and `model_path` (`landscape_classifier.pt`) are added to `params.yaml`, and it also reads `prepared_data`. Declare `metrics/train.json` as the stage's metric, run the pipeline, show the metrics with `dvc metrics show`, then save everything in git.
 
-**Documentation utile**
+**Useful documentation**
 
 - [`dvc metrics show`](https://doc.dvc.org/command-reference/metrics/show)
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-Les dépendances de `entraine` sont la sortie de `prepare` et le code qu'elle exécute (`__main__.py`, `donnees.py`, `modele.py` et `entrainement.py`)&nbsp;: c'est en déclarant `preparees` comme dépendance que DVC sait que `entraine` vient après `prepare`. Sa sortie est le modèle (`-o`). Sa métrique se déclare avec `-M`&nbsp;: un fichier que DVC ne met pas en cache et que git suit, pour comparer les métriques d'un commit à l'autre. `dvc repro` ne relance pas `prepare`, qui est à jour. L'entraînement dure une à deux minutes.
+The dependencies of `train` are `prepare`'s output and the code it runs (`__main__.py`, `data.py`, `model.py` and `train.py`): declaring `prepared` as a dependency is how DVC knows that `train` comes after `prepare`. Its output is the model (`-o`). Its metric is declared with `-M`: a file DVC doesn't cache and git tracks, to compare the metrics from one commit to the next. `dvc repro` doesn't run `prepare` again, which is up to date. The training takes one to two minutes.
 
-À la fin de `params.yaml`&nbsp;:
+At the end of `params.yaml`:
 
 ```yaml
-taux_apprentissage: ...
-nb_epoques: ...
-chemin_modele: ...
+learning_rate: ...
+epochs: ...
+model_path: ...
 ```
 
 ```console
-uv run dvc stage add -n entraine -p ... -d preparees -d ... -o ... -M ... python -m compression_modele entraine
+uv run dvc stage add -n train -p ... -d prepared -d ... -o ... -M ... python -m model_compression train
 uv run dvc repro
 uv run dvc metrics show
 git add ...
@@ -428,46 +426,46 @@ git commit -m "..."
 <details>
 <summary>Solution</summary>
 
-À la fin de `params.yaml`&nbsp;:
+At the end of `params.yaml`:
 
 ```yaml
-taux_apprentissage: 0.001
-nb_epoques: 5
-chemin_modele: classifieur_paysages.pt
+learning_rate: 0.001
+epochs: 5
+model_path: landscape_classifier.pt
 ```
 
 ```console
-uv run dvc stage add -n entraine \
-    -p dossier_prepare,taux_apprentissage,nb_epoques,chemin_modele \
-    -d preparees -d src/compression_modele/__main__.py -d src/compression_modele/donnees.py \
-    -d src/compression_modele/modele.py -d src/compression_modele/entrainement.py \
-    -o classifieur_paysages.pt -M metriques/entrainement.json \
-    python -m compression_modele entraine
+uv run dvc stage add -n train \
+    -p prepared_data,learning_rate,epochs,model_path \
+    -d prepared -d src/model_compression/__main__.py -d src/model_compression/data.py \
+    -d src/model_compression/model.py -d src/model_compression/train.py \
+    -o landscape_classifier.pt -M metrics/train.json \
+    python -m model_compression train
 ```
 
 ```console
 uv run dvc repro
 uv run dvc metrics show
-git add .gitignore dvc.lock dvc.yaml metriques params.yaml src
-git commit -m "Ajout de l'étape d'entraînement"
+git add .gitignore dvc.lock dvc.yaml metrics params.yaml src
+git commit -m "Add the training stage"
 ```
 
 </details>
 
-### Une expérience&nbsp;: changement du taux d'apprentissage
+### An experiment: changing the learning rate
 
-Lancez avec `dvc exp run` une expérience où `taux_apprentissage` vaut `0.003`, sans modifier `params.yaml` à la main. Comparez ses métriques à celles du dernier commit avec `dvc metrics diff`, puis listez les expériences avec `dvc exp show`. Quelles étapes l'expérience a-t-elle exécutées&nbsp;? Lesquelles s'exécuteraient si vous changiez `images_par_classe`&nbsp;? Si l'exactitude s'améliore, gardez ce taux&nbsp;: enregistrez dans git ce que l'expérience a changé.
+Run with `dvc exp run` an experiment where `learning_rate` is `0.003`, without editing `params.yaml` by hand. Compare its metrics with the last commit's with `dvc metrics diff`, then list the experiments with `dvc exp show`. Which stages did the experiment run? Which ones would run if you changed `images_per_class`? If the accuracy improves, keep this rate: save in git what the experiment changed.
 
-**Documentation utile**
+**Useful documentation**
 
 - [`dvc exp run`](https://doc.dvc.org/command-reference/exp/run)
 - [`dvc metrics diff`](https://doc.dvc.org/command-reference/metrics/diff)
 - [`dvc exp show`](https://doc.dvc.org/command-reference/exp/show)
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-`-S taux_apprentissage=0.003` change le paramètre le temps de l'expérience, et `dvc exp run` en laisse le résultat dans l'espace de travail&nbsp;: `params.yaml`, `dvc.lock`, le modèle et `metriques/entrainement.json`. `dvc metrics diff` compare l'espace de travail au dernier commit&nbsp;; `--only-changed` n'affiche, dans `dvc exp show`, que les colonnes qui diffèrent d'une expérience à l'autre. Pour `images_par_classe`, regardez de quoi dépend `entraine`.
+`-S learning_rate=0.003` changes the parameter for the experiment, and `dvc exp run` leaves its result in the workspace: `params.yaml`, `dvc.lock`, the model and `metrics/train.json`. `dvc metrics diff` compares the workspace with the last commit; `--only-changed` makes `dvc exp show` only show the columns that differ from one experiment to another. For `images_per_class`, look at what `train` depends on.
 
 ```console
 uv run dvc exp run -S ...
@@ -483,39 +481,39 @@ git commit -m "..."
 <summary>Solution</summary>
 
 ```console
-uv run dvc exp run -S taux_apprentissage=0.003
+uv run dvc exp run -S learning_rate=0.003
 uv run dvc metrics diff
 uv run dvc exp show --only-changed
-git add dvc.lock metriques params.yaml
-git commit -m "Taux d'apprentissage à 0,003"
+git add dvc.lock metrics params.yaml
+git commit -m "Set the learning rate to 0.003"
 ```
 
-Seule `entraine` s'exécute&nbsp;: `prepare` ne lit pas `taux_apprentissage`. Sur nos essais, l'exactitude passe de 0,58 à 0,61 environ (elle varie un peu d'une machine à l'autre). Changer `images_par_classe` rendrait `prepare` obsolète, et `entraine` s'exécuterait après elle, parce que sa dépendance `preparees` aurait changé. Si `prepare` produisait exactement les mêmes fichiers, DVC ne relancerait pas `entraine`&nbsp;: il compare les empreintes, pas les dates. `dvc exp show` garde la trace de chaque expérience, même non commitée&nbsp;: `dvc exp apply` en ramène une dans l'espace de travail, `dvc exp branch` en fait une branche.
+Only `train` runs: `prepare` doesn't read `learning_rate`. In our runs, the accuracy goes from about 0.58 to 0.61 (it varies a little from one machine to another). Changing `images_per_class` would make `prepare` outdated, and `train` would run after it, because its `prepared` dependency would have changed. If `prepare` produced exactly the same files, DVC wouldn't run `train` again: it compares hashes, not dates. `dvc exp show` keeps track of every experiment, even uncommitted: `dvc exp apply` brings one back into the workspace, `dvc exp branch` makes a branch of it.
 
 </details>
 
-## Compression du modèle a posteriori
+## Compressing the model after training
 
-Reste l'étape `compresse`, qui réduit le modèle entraîné et mesure ce que la réduction coûte et rapporte, selon deux paramètres&nbsp;:
+What's left is the `compress` stage, which reduces the trained model and measures what the reduction costs and brings, according to two parameters:
 
-- `parcimonie`&nbsp;: la part des poids des convolutions et des couches denses à mettre à zéro, par un élagage non structuré, global, des poids de plus faible magnitude, suivi d'une époque de réentraînement&nbsp;; `0` n'élague rien&nbsp;;
-- `quantification`&nbsp;: `aucune` (pas de quantification), `dynamique` ou `statique`, les quantifications post-entraînement en int8 d'ONNX Runtime.
+- `sparsity`: the share of the weights of the convolutions and dense layers to set to zero, by a global unstructured pruning of the lowest-magnitude weights, followed by one epoch of retraining; `0` prunes nothing;
+- `quant_type`: `none` (no quantization), `dynamic` or `static`, ONNX Runtime's int8 post-training quantizations.
 
-Complétez la fonction `compresse` de `src/compression_modele/compression.py`, dont le début fournit&nbsp;:
+Complete the `compress` function of `src/model_compression/compress.py`, whose beginning provides:
 
-- `exporte_onnx`, qui exporte un modèle au format ONNX, en un seul fichier, son entrée nommée `x`&nbsp;;
-- `Calibration`, qui donne à `quantize_static` des images une à une&nbsp;;
-- `mesure`, qui mesure l'exactitude d'un modèle ONNX sur des images, la taille de son fichier, brute (`taille_mo`) et compressée par gzip (`gzip_mo`), et sa latence médiane pour une image (`latence_ms`)&nbsp;;
-- `rassemble_images`, qui rassemble les images et les étiquettes d'un `DataLoader` en tableaux.
+- `export_onnx`, which exports a model to the ONNX format, as a single file, its input named `x`;
+- `Calibration`, which gives `quantize_static` images one by one;
+- `measure`, which measures the accuracy of an ONNX model on images, the size of its file, raw (`size_mb`) and compressed by gzip (`gzip_mb`), and its median latency for one image (`latency_ms`);
+- `load_images`, which gathers the images and labels of a `DataLoader` into arrays.
 
-La fonction doit&nbsp;:
+The function must:
 
-1. charger le LeNet entraîné (`chemin_modele`) et l'exporter en ONNX&nbsp;: c'est le modèle flottant de référence&nbsp;;
-2. si `parcimonie` est positif, élaguer le modèle, le réentraîner une époque avec `entraine_epoque` et un optimiseur `AdamW` de taux `taux_apprentissage`, puis rendre l'élagage définitif&nbsp;;
-3. exporter le modèle élagué, puis le quantifier selon `quantification` dans `chemin_onnx` (`aucune`&nbsp;: une simple copie), en calibrant la quantification statique sur un lot d'images d'entraînement&nbsp;;
-4. écrire dans `CHEMIN_METRIQUES`, en JSON, les mesures du modèle flottant et du modèle réduit sur les images de test, sous les clés `flottant` et `compresse`.
+1. load the trained LeNet (`model_path`) and export it to ONNX: that's the reference float model;
+2. if `sparsity` is positive, prune the model, retrain it for one epoch with `train_epoch` and an `AdamW` optimizer of rate `learning_rate`, then make the pruning permanent;
+3. export the pruned model, then quantize it according to `quant_type` into `onnx_path` (`none`: a plain copy), calibrating the static quantization on a batch of training images;
+4. write to `METRICS_PATH`, as JSON, the measures of the float model and of the reduced model on the test images, under the keys `float` and `compressed`.
 
-**Documentation utile**
+**Useful documentation**
 
 - [`torch.load`](https://docs.pytorch.org/docs/stable/generated/torch.load.html)
 - [`torch.nn.Module.load_state_dict`](https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.load_state_dict)
@@ -544,17 +542,17 @@ from torch import nn
 from torch.nn.utils import prune
 from torch.utils.data import DataLoader
 
-from .donnees import TAILLE_IMAGE, cree_chargeur
-from .entrainement import entraine_epoque
-from .modele import LeNet
+from .data import IMAGE_SIZE, get_loader
+from .model import LeNet
+from .train import train_epoch
 
-CHEMIN_METRIQUES = Path("metriques/compression.json")
+METRICS_PATH = Path("metrics/compress.json")
 
 
-def exporte_onnx(modele: nn.Module, chemin: str) -> None:
-    exemple = (torch.rand(1, 3, *TAILLE_IMAGE),)
+def export_onnx(model: nn.Module, path: str) -> None:
+    example = (torch.rand(1, 3, *IMAGE_SIZE),)
     torch.onnx.export(
-        modele.eval(), exemple, chemin, dynamo=True, external_data=False, verbose=False
+        model.eval(), example, path, dynamo=True, external_data=False, verbose=False
     )
 
 
@@ -567,81 +565,77 @@ class Calibration(CalibrationDataReader):
         return None if image is None else {"x": image.numpy()}
 
 
-def mesure(chemin: str, images: np.ndarray, etiquettes: np.ndarray) -> dict:
-    session = ort.InferenceSession(chemin, providers=["CPUExecutionProvider"])
-    predictions, durees = [], []
+def measure(path: str, images: np.ndarray, labels: np.ndarray) -> dict:
+    session = ort.InferenceSession(path, providers=["CPUExecutionProvider"])
+    predictions, times = [], []
     for image in images:
-        debut = time.perf_counter()
+        start = time.perf_counter()
         (logits,) = session.run(None, {"x": image[None]})
-        durees.append(time.perf_counter() - debut)
+        times.append(time.perf_counter() - start)
         predictions.append(logits.argmax())
     return {
-        "exactitude": float(np.mean(np.array(predictions) == etiquettes)),
-        "taille_mo": Path(chemin).stat().st_size / 1e6,
-        "gzip_mo": len(gzip.compress(Path(chemin).read_bytes())) / 1e6,
-        "latence_ms": float(1000 * np.median(durees[10:])),
+        "accuracy": float(np.mean(np.array(predictions) == labels)),
+        "size_mb": Path(path).stat().st_size / 1e6,
+        "gzip_mb": len(gzip.compress(Path(path).read_bytes())) / 1e6,
+        "latency_ms": float(1000 * np.median(times[10:])),
     }
 
 
-def rassemble_images(chargeur: DataLoader) -> tuple[np.ndarray, np.ndarray]:
-    images, etiquettes = zip(*chargeur, strict=True)
-    return torch.cat(images).numpy(), torch.cat(etiquettes).numpy()
+def load_images(loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
+    images, labels = zip(*loader, strict=True)
+    return torch.cat(images).numpy(), torch.cat(labels).numpy()
 
 
-def compresse(
-    dossier_prepare: str,
-    chemin_modele: str,
-    taux_apprentissage: float,
-    parcimonie: float,
-    quantification: str,
-    chemin_onnx: str,
+def compress(
+    prepared_data: str,
+    model_path: str,
+    learning_rate: float,
+    sparsity: float,
+    quant_type: str,
+    onnx_path: str,
 ) -> None:
-    # Votre code ici
+    # Your code here
     ...
 ```
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-Les exports et les quantifications écrivent des fichiers intermédiaires (le modèle flottant, le modèle élagué, celui que prépare `quant_pre_process`)&nbsp;: un dossier temporaire les garde, le temps de la fonction. L'élagage est celui des diapositives, avec `amount=parcimonie`. `quantize_dynamic` et `quantize_static` lisent le modèle préparé par `quant_pre_process`, celui-ci avec `Calibration([image[None] for image in lot])` et `per_channel=True`, `lot` étant le premier lot de `chargeur_ent`. `rassemble_images(chargeur_test)` renvoie les images et les étiquettes que `mesure` attend.
+The exports and quantizations write intermediate files (the float model, the pruned model, the one `quant_pre_process` prepares): a temporary directory keeps them while the function runs. The pruning is the slides', with `amount=sparsity`. `quantize_dynamic` and `quantize_static` read the model prepared by `quant_pre_process`, the latter with `Calibration([image[None] for image in batch])` and `per_channel=True`, `batch` being `train_loader`'s first batch. `load_images(test_loader)` returns the images and labels `measure` expects.
 
 ```python
-def compresse(
-    dossier_prepare: str,
-    chemin_modele: str,
-    taux_apprentissage: float,
-    parcimonie: float,
-    quantification: str,
-    chemin_onnx: str,
+def compress(
+    prepared_data: str,
+    model_path: str,
+    learning_rate: float,
+    sparsity: float,
+    quant_type: str,
+    onnx_path: str,
 ) -> None:
     torch.manual_seed(0)
-    chargeur_ent = cree_chargeur(
-        f"{dossier_prepare}/entrainement", TAILLE_IMAGE, melange=True
-    )
-    images, etiquettes = rassemble_images(
-        cree_chargeur(f"{dossier_prepare}/test", TAILLE_IMAGE)
-    )
-    modele = LeNet()
-    modele.load_state_dict(...)
-    with tempfile.TemporaryDirectory() as dossier_tmp:
-        chemin_flottant = f"{dossier_tmp}/flottant.onnx"
-        exporte_onnx(modele, chemin_flottant)
-        if parcimonie > 0:
-            ...  # élaguer, réentraîner une époque, rendre l'élagage définitif
-        chemin_elague = f"{dossier_tmp}/elague.onnx"
-        exporte_onnx(modele, chemin_elague)
-        if quantification == "aucune":
+    train_loader = get_loader(f"{prepared_data}/train", IMAGE_SIZE, shuffle=True)
+    images, labels = load_images(get_loader(f"{prepared_data}/test", IMAGE_SIZE))
+    model = LeNet()
+    model.load_state_dict(...)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        float_path = f"{tmp_dir}/float.onnx"
+        export_onnx(model, float_path)
+        if sparsity > 0:
+            ...  # prune, retrain for one epoch, make the pruning permanent
+        pruned_path = f"{tmp_dir}/pruned.onnx"
+        export_onnx(model, pruned_path)
+        if quant_type == "none":
             shutil.copyfile(...)
         else:
-            chemin_pretraite = f"{dossier_tmp}/pretraite.onnx"
+            preprocessed_path = f"{tmp_dir}/preprocessed.onnx"
             quant_pre_process(...)
-            if quantification == "dynamique":
+            if quant_type == "dynamic":
                 quantize_dynamic(...)
             else:
-                lot, _ = next(iter(chargeur_ent))
+                batch, _ = next(iter(train_loader))
                 quantize_static(...)
-        metriques = {"flottant": mesure(...), "compresse": mesure(...)}
-    CHEMIN_METRIQUES.write_text(json.dumps(metriques, indent=2))
+        metrics = {"float": measure(...), "compressed": measure(...)}
+    METRICS_PATH.write_text(json.dumps(metrics, indent=2))
 ```
 
 </details>
@@ -649,7 +643,7 @@ def compresse(
 <details>
 <summary>Solution</summary>
 
-`src/compression_modele/compression.py`&nbsp;:
+`src/model_compression/compress.py`:
 
 ```python
 import gzip
@@ -673,17 +667,17 @@ from torch import nn
 from torch.nn.utils import prune
 from torch.utils.data import DataLoader
 
-from .donnees import TAILLE_IMAGE, cree_chargeur
-from .entrainement import entraine_epoque
-from .modele import LeNet
+from .data import IMAGE_SIZE, get_loader
+from .model import LeNet
+from .train import train_epoch
 
-CHEMIN_METRIQUES = Path("metriques/compression.json")
+METRICS_PATH = Path("metrics/compress.json")
 
 
-def exporte_onnx(modele: nn.Module, chemin: str) -> None:
-    exemple = (torch.rand(1, 3, *TAILLE_IMAGE),)
+def export_onnx(model: nn.Module, path: str) -> None:
+    example = (torch.rand(1, 3, *IMAGE_SIZE),)
     torch.onnx.export(
-        modele.eval(), exemple, chemin, dynamo=True, external_data=False, verbose=False
+        model.eval(), example, path, dynamo=True, external_data=False, verbose=False
     )
 
 
@@ -696,106 +690,100 @@ class Calibration(CalibrationDataReader):
         return None if image is None else {"x": image.numpy()}
 
 
-def mesure(chemin: str, images: np.ndarray, etiquettes: np.ndarray) -> dict:
-    session = ort.InferenceSession(chemin, providers=["CPUExecutionProvider"])
-    predictions, durees = [], []
+def measure(path: str, images: np.ndarray, labels: np.ndarray) -> dict:
+    session = ort.InferenceSession(path, providers=["CPUExecutionProvider"])
+    predictions, times = [], []
     for image in images:
-        debut = time.perf_counter()
+        start = time.perf_counter()
         (logits,) = session.run(None, {"x": image[None]})
-        durees.append(time.perf_counter() - debut)
+        times.append(time.perf_counter() - start)
         predictions.append(logits.argmax())
     return {
-        "exactitude": float(np.mean(np.array(predictions) == etiquettes)),
-        "taille_mo": Path(chemin).stat().st_size / 1e6,
-        "gzip_mo": len(gzip.compress(Path(chemin).read_bytes())) / 1e6,
-        "latence_ms": float(1000 * np.median(durees[10:])),
+        "accuracy": float(np.mean(np.array(predictions) == labels)),
+        "size_mb": Path(path).stat().st_size / 1e6,
+        "gzip_mb": len(gzip.compress(Path(path).read_bytes())) / 1e6,
+        "latency_ms": float(1000 * np.median(times[10:])),
     }
 
 
-def rassemble_images(chargeur: DataLoader) -> tuple[np.ndarray, np.ndarray]:
-    images, etiquettes = zip(*chargeur, strict=True)
-    return torch.cat(images).numpy(), torch.cat(etiquettes).numpy()
+def load_images(loader: DataLoader) -> tuple[np.ndarray, np.ndarray]:
+    images, labels = zip(*loader, strict=True)
+    return torch.cat(images).numpy(), torch.cat(labels).numpy()
 
 
-def compresse(
-    dossier_prepare: str,
-    chemin_modele: str,
-    taux_apprentissage: float,
-    parcimonie: float,
-    quantification: str,
-    chemin_onnx: str,
+def compress(
+    prepared_data: str,
+    model_path: str,
+    learning_rate: float,
+    sparsity: float,
+    quant_type: str,
+    onnx_path: str,
 ) -> None:
     torch.manual_seed(0)
-    chargeur_ent = cree_chargeur(
-        f"{dossier_prepare}/entrainement", TAILLE_IMAGE, melange=True
-    )
-    images, etiquettes = rassemble_images(
-        cree_chargeur(f"{dossier_prepare}/test", TAILLE_IMAGE)
-    )
-    modele = LeNet()
-    modele.load_state_dict(torch.load(chemin_modele))
-    with tempfile.TemporaryDirectory() as dossier_tmp:
-        chemin_flottant = f"{dossier_tmp}/flottant.onnx"
-        exporte_onnx(modele, chemin_flottant)
-        if parcimonie > 0:
-            types_couches = nn.Conv2d | nn.Linear
-            poids = [
-                (m, "weight") for m in modele.modules() if isinstance(m, types_couches)
-            ]
+    train_loader = get_loader(f"{prepared_data}/train", IMAGE_SIZE, shuffle=True)
+    images, labels = load_images(get_loader(f"{prepared_data}/test", IMAGE_SIZE))
+    model = LeNet()
+    model.load_state_dict(torch.load(model_path))
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        float_path = f"{tmp_dir}/float.onnx"
+        export_onnx(model, float_path)
+        if sparsity > 0:
+            kinds = nn.Conv2d | nn.Linear
+            weights = [(m, "weight") for m in model.modules() if isinstance(m, kinds)]
             prune.global_unstructured(
-                poids, pruning_method=prune.L1Unstructured, amount=parcimonie
+                weights, pruning_method=prune.L1Unstructured, amount=sparsity
             )
-            optimiseur = torch.optim.AdamW(modele.parameters(), lr=taux_apprentissage)
-            entraine_epoque(modele, chargeur_ent, optimiseur)
-            for module, nom in poids:
-                prune.remove(module, nom)
-        chemin_elague = f"{dossier_tmp}/elague.onnx"
-        exporte_onnx(modele, chemin_elague)
-        if quantification == "aucune":
-            shutil.copyfile(chemin_elague, chemin_onnx)
+            optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+            train_epoch(model, train_loader, optimizer)
+            for module, name in weights:
+                prune.remove(module, name)
+        pruned_path = f"{tmp_dir}/pruned.onnx"
+        export_onnx(model, pruned_path)
+        if quant_type == "none":
+            shutil.copyfile(pruned_path, onnx_path)
         else:
-            chemin_pretraite = f"{dossier_tmp}/pretraite.onnx"
-            quant_pre_process(chemin_elague, chemin_pretraite)
-            if quantification == "dynamique":
+            preprocessed_path = f"{tmp_dir}/preprocessed.onnx"
+            quant_pre_process(pruned_path, preprocessed_path)
+            if quant_type == "dynamic":
                 quantize_dynamic(
-                    chemin_pretraite, chemin_onnx, weight_type=QuantType.QInt8
+                    preprocessed_path, onnx_path, weight_type=QuantType.QInt8
                 )
             else:
-                lot, _ = next(iter(chargeur_ent))
+                batch, _ = next(iter(train_loader))
                 quantize_static(
-                    chemin_pretraite,
-                    chemin_onnx,
-                    Calibration([image[None] for image in lot]),
+                    preprocessed_path,
+                    onnx_path,
+                    Calibration([image[None] for image in batch]),
                     per_channel=True,
                 )
-        metriques = {
-            "flottant": mesure(chemin_flottant, images, etiquettes),
-            "compresse": mesure(chemin_onnx, images, etiquettes),
+        metrics = {
+            "float": measure(float_path, images, labels),
+            "compressed": measure(onnx_path, images, labels),
         }
-    CHEMIN_METRIQUES.write_text(json.dumps(metriques, indent=2))
+    METRICS_PATH.write_text(json.dumps(metrics, indent=2))
 ```
 
 </details>
 
-## L'étape de compression
+## The compression stage
 
-Ajoutez à `params.yaml` `parcimonie` (`0.5`), `quantification` (`statique`) et `chemin_onnx` (`classifieur_paysages.onnx`), et à la chaîne l'étape `compresse`, qui lance `python -m compression_modele compresse`, avec ses paramètres, ses dépendances, sa sortie et sa métrique, `metriques/compression.json`. Exécutez la chaîne, comparez avec `dvc metrics show` le modèle flottant et le modèle réduit, puis enregistrez le tout dans git. Le modèle réduit est-il plus petit&nbsp;? Plus rapide&nbsp;? Aussi exact&nbsp;?
+Add to `params.yaml` `sparsity` (`0.5`), `quant_type` (`static`) and `onnx_path` (`landscape_classifier.onnx`), and to the pipeline the `compress` stage, which runs `python -m model_compression compress`, with its parameters, its dependencies, its output and its metric, `metrics/compress.json`. Run the pipeline, compare the float model and the reduced model with `dvc metrics show`, then save everything in git. Is the reduced model smaller? Faster? As accurate?
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-Les paramètres de `compresse` sont les trois nouveaux, plus `dossier_prepare`, `chemin_modele` et `taux_apprentissage`, que la fonction lit aussi. Ses dépendances sont `preparees`, le modèle entraîné et le code qu'elle exécute&nbsp;: `__main__.py`, `compression.py`, et les modules qu'il importe.
+The parameters of `compress` are the three new ones, plus `prepared_data`, `model_path` and `learning_rate`, which the function reads too. Its dependencies are `prepared`, the trained model and the code it runs: `__main__.py`, `compress.py`, and the modules it imports.
 
-À la fin de `params.yaml`&nbsp;:
+At the end of `params.yaml`:
 
 ```yaml
-parcimonie: ...
-quantification: ...
-chemin_onnx: ...
+sparsity: ...
+quant_type: ...
+onnx_path: ...
 ```
 
 ```console
-uv run dvc stage add -n compresse -p ... -d ... -o ... -M ... python -m compression_modele compresse
+uv run dvc stage add -n compress -p ... -d ... -o ... -M ... python -m model_compression compress
 uv run dvc repro
 uv run dvc metrics show
 git add ...
@@ -807,43 +795,43 @@ git commit -m "..."
 <details>
 <summary>Solution</summary>
 
-À la fin de `params.yaml`&nbsp;:
+At the end of `params.yaml`:
 
 ```yaml
-parcimonie: 0.5
-quantification: statique
-chemin_onnx: classifieur_paysages.onnx
+sparsity: 0.5
+quant_type: static
+onnx_path: landscape_classifier.onnx
 ```
 
 ```console
-uv run dvc stage add -n compresse \
-    -p dossier_prepare,chemin_modele,taux_apprentissage,parcimonie,quantification,chemin_onnx \
-    -d preparees -d classifieur_paysages.pt -d src/compression_modele/__main__.py \
-    -d src/compression_modele/compression.py -d src/compression_modele/donnees.py \
-    -d src/compression_modele/modele.py -d src/compression_modele/entrainement.py \
-    -o classifieur_paysages.onnx -M metriques/compression.json \
-    python -m compression_modele compresse
+uv run dvc stage add -n compress \
+    -p prepared_data,model_path,learning_rate,sparsity,quant_type,onnx_path \
+    -d prepared -d landscape_classifier.pt -d src/model_compression/__main__.py \
+    -d src/model_compression/compress.py -d src/model_compression/data.py \
+    -d src/model_compression/model.py -d src/model_compression/train.py \
+    -o landscape_classifier.onnx -M metrics/compress.json \
+    python -m model_compression compress
 ```
 
 ```console
 uv run dvc repro
 uv run dvc metrics show
-git add .gitignore dvc.lock dvc.yaml metriques params.yaml src
-git commit -m "Ajout de l'étape de compression"
+git add .gitignore dvc.lock dvc.yaml metrics params.yaml src
+git commit -m "Add the compression stage"
 ```
 
-Sur nos essais, le modèle élagué de moitié puis quantifié en int8 est trois fois plus petit (0,27 → 0,09&nbsp;Mo), à une exactitude d'un point plus basse (0,615 → 0,605)… mais plus lent&nbsp;: 0,7&nbsp;ms par image au lieu de 0,45. Ce surcoût ne vient pas des conversions du format QDQ&nbsp;: à l'ouverture de la session, ONNX Runtime fond le graphe quantifié en opérateurs int8 (`QLinearConv` pour les convolutions, `QGemm` pour les couches linéaires), avec une seule quantification à l'entrée et une seule déquantification à la sortie. Sur la seule machine où nous l'avons mesuré, il vient des noyaux int8 eux-mêmes, lents sur un CPU sans instructions int8 rapides (VNNI), et des changements de disposition des données qu'ils demandent, que rien ne compense sur un modèle aussi petit. Un gain annoncé n'est pas un gain mesuré&nbsp;: mesurez sur le matériel cible.
+In our runs, the model pruned by half then quantized to int8 is three times smaller (0.27 → 0.09 MB), at an accuracy one point lower (0.615 → 0.605)… but slower: 0.7 ms per image instead of 0.45. The quantize and dequantize operations the static quantization adds (the QDQ format) cost more than the int8 computations save on a CPU without fast int8 instructions (VNNI) and on a model this small. A claimed gain isn't a measured gain: measure on the target hardware.
 
 </details>
 
-### Expériences de compression
+### Compression experiments
 
-Lancez deux expériences&nbsp;: une quantification dynamique (`quantification` à `dynamique`), et un élagage de 90&nbsp;% sans quantification (`parcimonie` à `0.9`, `quantification` à `aucune`). Comparez-les avec `dvc exp show`. Quel réglage donne le plus petit fichier&nbsp;? Le modèle le plus rapide&nbsp;? L'élagage seul réduit-il la taille du fichier&nbsp;? Et celle du fichier compressé&nbsp;?
+Run two experiments: a dynamic quantization (`quant_type` set to `dynamic`), and a 90% pruning without quantization (`sparsity` set to `0.9`, `quant_type` set to `none`). Compare them with `dvc exp show`. Which setting gives the smallest file? The fastest model? Does pruning alone reduce the file's size? And the compressed file's?
 
 <details>
-<summary>Conseils supplémentaires</summary>
+<summary>Additional hints</summary>
 
-`-S` se répète pour changer plusieurs paramètres. Seule `compresse` s'exécute.
+`-S` can be repeated to change several parameters. Only `compress` runs.
 
 ```console
 uv run dvc exp run -S ...
@@ -857,15 +845,15 @@ uv run dvc exp show --only-changed
 <summary>Solution</summary>
 
 ```console
-uv run dvc exp run -S quantification=dynamique
-uv run dvc exp run -S parcimonie=0.9 -S quantification=aucune
+uv run dvc exp run -S quant_type=dynamic
+uv run dvc exp run -S sparsity=0.9 -S quant_type=none
 uv run dvc exp show --only-changed
 ```
 
-Les deux quantifications donnent des fichiers trois fois plus petits, et la dynamique est la plus lente (2,5&nbsp;ms par image sur nos essais)&nbsp;: elle calcule les plages des activations à chaque inférence, et les convolutions en entiers d'ONNX Runtime (`ConvInteger`) sont lentes sur CPU. L'élagage seul ne réduit pas la taille du fichier&nbsp;: les zéros y sont stockés comme les autres poids, et les calculs ne vont pas plus vite. Mais le fichier compressé est cinq fois plus petit (0,23 → 0,05&nbsp;Mo)&nbsp;: les zéros se compressent bien, ce qui compte pour télécharger un modèle. Et l'exactitude ne baisse pas&nbsp;: l'époque de réentraînement compense l'élagage, signe que ce LeNet est surdimensionné pour ces images.
+Both quantizations give files three times smaller, and the dynamic one is the slowest (2.5 ms per image in our runs): it computes the activations' ranges at each inference, and ONNX Runtime's integer convolutions (`ConvInteger`) are slow on a CPU. Pruning alone doesn't reduce the file's size: the zeros are stored like the other weights, and the computations aren't faster. But the compressed file is five times smaller (0.23 → 0.05 MB): zeros compress well, which matters to download a model. And the accuracy doesn't drop: the epoch of retraining makes up for the pruning, a sign that this LeNet is oversized for these images.
 
 </details>
 
 ## Solution
 
-Le projet terminé est sur la [branche `solution`](https://github.com/shuuchuu/compression/tree/solution) du dépôt.
+The finished project is on the repository's [`solution-en` branch](https://github.com/shuuchuu/compression/tree/solution-en).

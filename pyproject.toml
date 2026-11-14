@@ -35,9 +35,6 @@ url = "https://download.pytorch.org/whl/cpu"
 torch = [{index = "pytorch-cpu"}]
 torchvision = [{index = "pytorch-cpu"}]
 
-[tool.uv.build-backend]
-module-name = "compression_modele"
-
 [tool.ruff]
 target-version = "py313"
 

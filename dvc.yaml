@@ -1,55 +1,55 @@
 stages:
   prepare:
-    cmd: python -m compression_modele prepare
+    cmd: python -m model_compression prepare
     params:
-      - dossier_ent
-      - dossier_test
-      - images_par_classe
-      - dossier_prepare
+      - train_data
+      - test_data
+      - images_per_class
+      - prepared_data
     deps:
-      - ${dossier_ent}
-      - ${dossier_test}
-      - src/compression_modele/__main__.py
-      - src/compression_modele/donnees.py
+      - ${train_data}
+      - ${test_data}
+      - src/model_compression/__main__.py
+      - src/model_compression/data.py
     outs:
-      - ${dossier_prepare}
-  entraine:
-    cmd: python -m compression_modele entraine
+      - ${prepared_data}
+  train:
+    cmd: python -m model_compression train
     params:
-      - dossier_prepare
-      - taux_apprentissage
-      - nb_epoques
-      - chemin_modele
+      - prepared_data
+      - learning_rate
+      - epochs
+      - model_path
     deps:
-      - ${dossier_prepare}
-      - src/compression_modele/__main__.py
-      - src/compression_modele/donnees.py
-      - src/compression_modele/modele.py
-      - src/compression_modele/entrainement.py
+      - ${prepared_data}
+      - src/model_compression/__main__.py
+      - src/model_compression/data.py
+      - src/model_compression/model.py
+      - src/model_compression/train.py
     outs:
-      - ${chemin_modele}
+      - ${model_path}
     metrics:
-      - metriques/entrainement.json:
+      - metrics/train.json:
           cache: false
-  compresse:
-    cmd: python -m compression_modele compresse
+  compress:
+    cmd: python -m model_compression compress
     params:
-      - dossier_prepare
-      - chemin_modele
-      - taux_apprentissage
-      - parcimonie
-      - quantification
-      - chemin_onnx
+      - prepared_data
+      - model_path
+      - learning_rate
+      - sparsity
+      - quant_type
+      - onnx_path
     deps:
-      - ${dossier_prepare}
-      - ${chemin_modele}
-      - src/compression_modele/__main__.py
-      - src/compression_modele/compression.py
-      - src/compression_modele/donnees.py
-      - src/compression_modele/modele.py
-      - src/compression_modele/entrainement.py
+      - ${prepared_data}
+      - ${model_path}
+      - src/model_compression/__main__.py
+      - src/model_compression/compress.py
+      - src/model_compression/data.py
+      - src/model_compression/model.py
+      - src/model_compression/train.py
     outs:
-      - ${chemin_onnx}
+      - ${onnx_path}
     metrics:
-      - metriques/compression.json:
+      - metrics/compress.json:
           cache: false
