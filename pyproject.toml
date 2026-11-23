@@ -11,13 +11,15 @@ dependencies = [
   "torchvision >= 0.24",
 ]
 description = "Train and compress a LeNet."
-homepage = "https://github.com/shuuchuu/compression"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 name = "model-compression"
 readme = "README.md"
 requires-python = ">= 3.13"
 version = "0.1.0"
+
+[project.urls]
+Homepage = "https://github.com/shuuchuu/compression"
 
 [dependency-groups]
 dev = [
@@ -37,9 +39,6 @@ torchvision = [{index = "pytorch-cpu"}]
 
 [tool.uv.build-backend]
 module-name = "compression_modele"
-
-[tool.ruff]
-target-version = "py313"
 
 [tool.ruff.lint]
 ignore = [
